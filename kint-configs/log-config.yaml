@@ -1,0 +1,55 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    level1:
+        format: "%(message)s"
+    level2:
+        format: "%(levelname)s - %(message)s"
+    level3:
+        format: "%(name)s - %(levelname)s - %(message)s"
+    level4:
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: INFO
+        formatter: level1
+        stream: ext://sys.stdout
+
+    log_debug_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: level4
+        filename: kernel-debug.log
+        maxBytes: 524288 # 1MB
+        backupCount: 2
+        encoding: utf8
+
+    log_info_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: level4
+        filename: kernel-info.log
+        maxBytes: 524288 # 1MB
+        backupCount: 2
+        encoding: utf8
+
+    log_error_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: ERROR
+        formatter: level4
+        filename: kernel-error.log
+        maxBytes: 524288 # 1MB
+        backupCount: 2
+        encoding: utf8
+
+loggers:
+    kint:
+        level: DEBUG
+        handlers: [console, log_debug_handler, log_info_handler, log_error_handler]
+        propagate: no
+
+root:
+    level: DEBUG
+    handlers: [console, log_debug_handler, log_info_handler, log_error_handler]

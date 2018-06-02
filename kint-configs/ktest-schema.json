@@ -1,0 +1,168 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "kernel test schema",
+    "type": "object",
+    "properties": {
+        "test-list": {
+            "$ref": "#/definitions/test-list",
+            "default": [
+                {
+                    "arch_name": "x86_64"
+                },
+                {
+                    "arch_name": "i386"
+                },
+                {
+                    "arch_name": "arm64"
+                }
+            ]
+        },
+        "results-template": {
+            "$ref": "#/definitions/results-template",
+            "default": [
+                {
+                    "arch_name": "x86_64"
+                },
+                {
+                    "arch_name": "i386"
+                },
+                {
+                    "arch_name": "arm64"
+                }
+            ]
+        }
+    },
+    "definitions": {
+        "test-list": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["arch_name"],
+                "properties": {
+                    "arch_name": {
+                        "description": "ARCH name used for compilation",
+                        "enum": [
+                            "x86_64",
+                            "i386",
+                            "arm64"
+                        ]
+                    },
+                    "compiler_options": {
+                        "description": "Compiler Options",
+                        "type": "object",
+                        "properties": {
+                            "CC": {
+                                "type": "string",
+                                "default": ""
+                            },
+                            "cflags": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "default": []
+                            }
+                        },
+                        "default": {
+                            "CC": "",
+                            "cflags": []
+                        }
+                    },
+                    "allyesconfig": {
+                        "description": "Enable allyesconfig compilation",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "allmodconfig": {
+                        "description": "Enable allmodconfig compilation",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "allnoconfig": {
+                        "description": "Enable allnoconfig compilation",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "defconfig": {
+                        "description": "Enable defconfig compilation",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "randconfig": {
+                        "description": "Enable randconfig compilation",
+                        "type": "boolean",
+                        "default": false
+                    }
+                }
+            }
+        },
+        "results-template": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["arch_name"],
+                "properties": {
+                    "arch_name": {
+                        "description": "ARCH name used for compilation",
+                        "type": "string",
+                        "enum": [
+                            "x86_64",
+                            "i386",
+                            "arm64"
+                        ]
+                    },
+                    "allyesconfig": {
+                        "description": "Kernel allyesconfig status",
+                        "type": "string",
+                        "enum": [
+                            "N/A",
+                            "Passed",
+                            "Failed"
+                        ],
+                        "default": "N/A"
+                    },
+                    "allmodconfig": {
+                        "description": "Kernel allmodconfig status",
+                        "type": "string",
+                        "enum": [
+                            "N/A",
+                            "Passed",
+                            "Failed"
+                        ],
+                        "default": "N/A"
+                    },
+                    "allnoconfig": {
+                        "description": "Kernel allnoconfig status",
+                        "type": "string",
+                        "enum": [
+                            "N/A",
+                            "Passed",
+                            "Failed"
+                        ],
+                        "default": "N/A"
+                    },
+                    "defconfig": {
+                        "description": "Kernel defconfig status",
+                        "type": "string",
+                        "enum": [
+                            "N/A",
+                            "Passed",
+                            "Failed"
+                        ],
+                        "default": "N/A"
+                    },
+                    "randconfig": {
+                        "description": "Kernel randconfig status",
+                        "type": "string",
+                        "enum": [
+                            "N/A",
+                            "Passed",
+                            "Failed"
+                        ],
+                        "default": "N/A"
+                    }
+                }
+            }
+        }
+    }
+}

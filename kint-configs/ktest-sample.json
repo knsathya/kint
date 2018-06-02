@@ -1,0 +1,28 @@
+{
+    "test-list": [
+        {
+            "arch_name": "x86_64",
+            "allyesconfig": true,
+            "allmodconfig": true,
+            "allnoconfig": true,
+            "defconfig": true
+        },
+        {
+            "arch_name": "i386",
+            "allyesconfig": true,
+            "allmodconfig": true,
+            "allnoconfig": true,
+            "defconfig": true
+        },
+        {
+            "arch_name": "arm64",
+            "compiler_options": {
+                "CC": "aarch64-linux-gnu-"
+            },
+            "allyesconfig": true,
+            "allmodconfig": true,
+            "allnoconfig": true,
+            "defconfig": true
+        }
+    ]
+}

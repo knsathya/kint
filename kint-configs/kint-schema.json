@@ -1,0 +1,509 @@
+{
+    "id": "https://git-amr-4.devtools.intel.com/gerrit/gitweb?p=sathya-utils.git#",
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "DEV-BKC/LTS kernel integration schema",
+    "type": "object",
+    "required": [
+        "remote-list",
+        "email-options",
+        "test-profiles",
+        "repos",
+        "kint-list"
+    ],
+    "properties": {
+        "remote-list": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/remote-params"
+            }
+        },
+        "email-options": {
+            "type": "object",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/smtp-params"
+                },
+                {
+                    "$ref": "#/definitions/email-params"
+                }
+            ]
+        },
+        "test-profiles": {
+            "$ref": "#/definitions/test-profile-params"
+        },
+        "repos": {
+            "$ref": "#/definitions/repo-list"
+        },
+        "kint-list": {
+            "$ref": "#/definitions/kint-list"
+        }
+    },
+
+    "definitions": {
+        "remote-params": {
+            "type": "object",
+            "description": "Git remote related params",
+            "required": [
+                "name",
+                "url"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Git remote name",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "Git remote link of your repository",
+                    "type": "string",
+                    "pattern": "((git|ssh|http(s)?)|(git@[\\w\\.]+))(:(//)?)([\\w\\.@\\:\\-~]+)(/)?"
+                }
+            }
+        },
+        "smtp-params": {
+            "type": "object",
+            "properties": {
+                "smtp-server": {
+                    "description": "SMTP server name",
+                    "type": "string",
+                    "default": "smtp.intel.com"
+                },
+                "smtp-port": {
+                    "description": "SMTP port number",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                },
+                "smtp-authentication": {
+                    "description": "SMTP Authentication",
+                    "enum": [
+                        "TLS",
+                        "None"
+                    ],
+                    "default": "None"
+                }
+            }
+        },
+        "email-params": {
+            "type": "object",
+            "description": "Email related parameters",
+            "required": [
+                "from",
+                "to"
+            ],
+            "properties": {
+                "from": {
+                    "description": "Senders email address",
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+                },
+                "to": {
+                    "description": "Receivers email address seperated by comma",
+                    "type": "string"
+                },
+                "cc": {
+                    "description": "Receivers CC email address seperated by comma",
+                    "type": "string"
+                }
+            }
+        },
+        "compile-test-params": {
+
+            "properties": {
+                "arch_name": {
+                    "description": "ARCH name used for compilation",
+                    "enum": [
+                        "x86_64",
+                        "i386",
+                        "arm64"
+                    ]
+                },
+                "compiler_options": {
+                    "description": "Compiler Options",
+                    "type": "object",
+                    "properties": {
+                        "CC":  { "type": "string", "default": "" },
+                        "cflags": { "type": "array", "items": { "type":"string" }, "default": [] }
+                    },
+                    "default": { "CC": "", "cflags": [] }
+                },
+                "allyesconfig": {
+                    "description": "Enable allyesconfig compilation",
+                    "type": "boolean",
+                    "default": false
+                },
+                "allmodconfig": {
+                    "description": "Enable allmodconfig compilation",
+                    "type": "boolean",
+                    "default": false
+                },
+                "allnoconfig": {
+                    "description": "Enable allnoconfig compilation",
+                    "type": "boolean",
+                    "default": false
+                },
+                "defconfig": {
+                    "description": "Enable allnoconfig compilation",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "static-analysis-params": {
+            "type": "object",
+            "properties": {
+                "checkpatch": {
+                    "description": "Enable checkpatch static analysis",
+                    "type": "boolean",
+                    "default": false
+                },
+                "aiaiai": {
+                    "description": "Enable aiaiai static analysis",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "bat-test-params": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "platform-name": {
+                        "description": "Name of the platform",
+                        "type": "string"
+                    },
+                    "Android": {
+                        "description": "Enable Android BAT test",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "Clear-OS": {
+                        "description": "Enable Clear OS BAT test",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "Yocto": {
+                        "description": "Enable Yocto BAT test",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "Debian": {
+                        "description": "Enable Debian BAT test",
+                        "type": "boolean",
+                        "default": false
+                    }
+                }
+            }
+        },
+        "test-profile-params": {
+            "type": "object",
+            "properties": {
+                "compile-tests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/compile-test-params"
+                    }
+                },
+                "static-analysis": {
+                    "$ref": "#/definitions/static-analysis-params"
+                },
+                "bat-tests": {
+                    "$ref": "#/definitions/bat-test-params"
+                }
+            }
+        },
+        "rr-cache-params": {
+            "type": "object",
+            "properties": {
+                "use-remote-cache": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "upload-remote-cache": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "use-auto-merge": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "remote-cache-params": {
+                    "type": "object",
+                    "properties": {
+                        "server-name": {
+                            "type": "string"
+                        },
+                        "share-point": {
+                            "type": "string"
+                        },
+                        "username": {
+                            "type": "string"
+                        },
+                        "password": {
+                            "type": "string"
+                        },
+                        "sync-protocol": {
+                            "enum": [
+                                "smb",
+                                "rsync",
+                                "wget"
+                            ]
+                        },
+                        "sync-options": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "upload-protocol": {
+                            "enum": [
+                                "smb",
+                                "rsync",
+                                "wget"
+                            ]
+                        },
+                        "upload-options": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "default": {}
+                }
+            }
+        },
+        "repo-merge-params": {
+            "type": "object",
+            "properties": {
+                "no-ff": {
+                    "description": "Enable no fast forward",
+                    "type": "boolean",
+                    "default": false
+                },
+                "add-log": {
+                    "description": "Add merge log",
+                    "type": "boolean",
+                    "default": false
+                },
+                "send-email": {
+                    "description": "Enable to send email on merge conflicts",
+                    "type": "boolean",
+                    "default": false
+                },
+                "use-rr-cache": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "rr-cache": {
+                    "$ref": "#/definitions/rr-cache-params"
+                }
+            }
+        },
+        "repo-upload-params": {
+            "type": "object",
+            "properties": {
+                "mode": {
+                    "description": "Push model to be used during repository upload",
+                    "enum": [
+                        "force-push",
+                        "push",
+                        "refs-for"
+                    ],
+                    "default": "force-push"
+                },
+                "url": {
+                    "description": "Name of the remote server",
+                    "type": "string"
+                },
+                "branch": {
+                    "description": "Name of the remote branch",
+                    "type": "string"
+                }
+            }
+        },
+        "repo-quilt-params": {
+            "type": "object",
+            "required": ["quilt-folder", "format-options"],
+            "properties": {
+                "quilt-folder": {
+                    "description": "Folder for quilt patch set",
+                    "type": "string"
+                },
+                "format-options": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "upload-copy": {
+                    "description": "Enable if you want to upload the repo quilt to a remote server",
+                    "type": "boolean",
+                    "default": false
+                },
+                "upload-options": {
+                    "$ref": "#/definitions/repo-upload-params"
+                }
+            }
+        },
+        "repo-output-params": {
+            "type": "object",
+            "properties": {
+                "quilt": {
+                    "$ref": "#/definitions/repo-quilt-params"
+                },
+                "default": {}
+            }
+        },
+        "repo-test-params": {
+            "type": "object",
+            "properties": {
+                "profiles": {
+                    "type": "array",
+                    "description": "List of tests to be executed",
+                    "items": {
+                        "enum": [
+                            "compile-tests",
+                            "static-analysis",
+                            "bat-tests"
+                        ]
+                    },
+                    "default": []
+                },
+                "send-email": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "subject-prefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "repo-source-params": {
+            "description": "List of the branches to be merged into the current repository",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "description": "Source repository params",
+                "properties": {
+                    "use-local": {
+                        "description": "Enable if the branch is locally available",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "skip": {
+                        "description": "Toggle button to skip a branch from list",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "url": {
+                        "description": "Source repo remote URL",
+                        "type": "string"
+                    },
+                    "branch": {
+                        "description": "Source repo remote branch name",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "repo-dest-params": {
+            "description": "List of the branches to be created using list of source branches.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "description": "Destination branch params",
+                "properties": {
+                    "local-branch": {
+                        "description": "Name of the branch",
+                        "type": "string"
+                    },
+                    "merge-mode": {
+                        "description": "Merge mode of source branches",
+                        "enum": [
+                            "rebase",
+                            "merge",
+                            "replace"
+                        ],
+                        "default": "replace"
+                    },
+                    "test-branch": {
+                        "description": "Enable if you want to test the branch",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "upload-copy": {
+                        "description": "Enable if you want to upload the branch to a remote server",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "generate-output": {
+                        "description": "Enable if you generate output in different format",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "merge-options": {
+                        "$ref": "#/definitions/repo-merge-params"
+                    },
+                    "upload-options": {
+                        "$ref": "#/definitions/repo-upload-params"
+                    },
+                    "test-options": {
+                        "$ref": "#/definitions/repo-test-params"
+                    },
+                    "output-options": {
+                        "$ref": "#/definitions/repo-output-params"
+                    }
+                }
+            }
+        },
+        "repo-params": {
+            "type": "object",
+            "properties": {
+                "repo-name": {
+                    "description": "Name of the repository",
+                    "type": "string"
+                },
+                "repo-head": {
+                    "description": "SHA ID or Kernel tag of the repo HEAD",
+                    "type": "string",
+                    "default": ""
+                },
+                "source-list": {
+                    "$ref": "#/definitions/repo-source-params"
+                },
+                "dest-list": {
+                    "$ref": "#/definitions/repo-dest-params"
+                }
+            }
+        },
+        "repo-list": {
+            "type": "array",
+            "description": "List of repositories",
+            "items": {
+                "$ref": "#/definitions/repo-params"
+            }
+        },
+        "kint-list": {
+            "type": "array",
+            "description": "List of repos needs to be integrated",
+            "items": {
+                "type": "object",
+                "description": "kint repo params",
+                "properties": {
+                    "dep-repos": {
+                        "description": "List of dependent repos of kint-repo ",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "kint-repo": {
+                        "description": "Name of the integration repo (name should match 'repos' list)",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
