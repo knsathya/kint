@@ -44,13 +44,13 @@ class KernelTest(object):
 
         return None
 
-    def __init__(self, src=os.getcwd(), out=os.path.join(os.getcwd(), 'out'),
+    def __init__(self, src=os.getcwd(), out=None,
                  test_archs=[],
                  config_list=[], logger=None):
 
         self.logger = logger or logging.getLogger(__name__)
         self.src = src
-        self.out = out
+        self.out = os.path.join(src, 'out') if out is None else out
         self.results = []
         self.tests = []
 
@@ -58,26 +58,27 @@ class KernelTest(object):
             testobj = {}
             resobj = {}
             testobj['arch_name'] = arch_name
+            testobj['compiler_options'] = { 'CC': "", 'cflags': [] }
             resobj['arch_name'] = arch_name
             for config in supported_configs:
                 testobj[config] = True if arch_name in test_archs and config in config_list else False
                 resobj[config] = '"N/A"'
-                self.results.append(resobj)
-                self.tests.append(testobj)
+            self.results.append(resobj)
+            self.tests.append(testobj)
 
     def print_test_cfg(self):
         for obj in self.tests:
             self.logger.info(format_h1("Arch Name: " + obj['arch_name'], tab=2))
             for config in supported_configs:
-                self.logger.info("Config: %s Status: %s", config, obj[config])
+                self.logger.info("Config: %-20s\t Status: %-10s", config, obj[config])
 
     def print_test_results(self):
         for obj in self.results:
             self.logger.info(format_h1("Arch Name: " + obj['arch_name'], tab=2))
             for config in supported_configs:
-                self.logger.info("Config: %s Status: %s", config, obj[config])
+                self.logger.info("Config: %-20s\t Status: %-10s", config, obj[config])
 
-    def parse_json(self, schema, cfg):
+    def json_config(self, schema, cfg):
         if not os.path.exists(os.path.abspath(cfg)):
             self.logger.error("Invalid config file")
             return
@@ -106,14 +107,14 @@ class KernelTest(object):
             for test in self.cfg["test-list"]:
                 obj = self._get_testobj(test['arch_name'])
                 for config in supported_configs:
-                    if test.pop(config, None) is not None:
+                    if test.get(config, None) is not None:
                         obj[config] = test[config]
 
         parser.print_cfg()
 
 
     def run(self):
-        self.logger.debug("Running kernel tests")
+        self.logger.info("Running kernel tests")
 
         def update_results(arch, config, status):
             resobj = self._get_resobj(arch)
@@ -123,7 +124,8 @@ class KernelTest(object):
             resobj[config] = status
 
         for test in self.tests:
-            arch_name = test.pop('arch_name', None)
+            self.logger.debug(test)
+            arch_name = test.get('arch_name', None)
             for config in supported_configs:
                 if test[config] is True:
                     if arch_name is None:
@@ -183,7 +185,7 @@ def add_cli_options(parser):
                         help='Enable debug option')
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.ERROR)
+    logging.basicConfig(level=logging.ERROR, format='%(message)s')
 
     logger = logging.getLogger(__name__)
 
@@ -197,7 +199,7 @@ if __name__ == "__main__":
         if not os.path.exists(args.log_file):
             open(os.path.exists(args.log_file), 'w+').close()
             hdlr = logging.FileHandler(args.log_file)
-            formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+            formatter = logging.Formatter('%(message)s')
             hdlr.setFormatter(formatter)
             logger.addHandler(hdlr)
 
@@ -208,7 +210,7 @@ if __name__ == "__main__":
 
     if args.use_json is True:
         obj =  KernelTest(logger=logger)
-        obj.parse_json(args.config_schema, args.config_data)
+        obj.json_config(args.config_schema, args.config_data)
     else:
         obj =  KernelTest(src=args.source_dir, test_archs=args.arch_list, config_list=args.config_list, logger=logger)
 
