@@ -189,7 +189,7 @@ class BuildKernel(object):
         self.logger.debug("BuildKernel: Executing %s", ' '.join(map(lambda x: str(x), cmd)))
 
         if dryrun is True:
-            return
+            return 0, '', ''
 
         shell = PyShell(logger=self.logger)
 
