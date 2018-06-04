@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Production kernel intergration test script
 #
@@ -23,7 +24,6 @@ import argparse
 from lib.json_parser import JSONParser
 from lib.build_kernel import BuildKernel
 from lib.decorators import format_h1
-
 
 supported_configs = ['allyesconfig', 'allmodconfig', 'allnoconfig', 'defconfig', 'randconfig']
 
@@ -77,6 +77,16 @@ class KernelTest(object):
             self.logger.info(format_h1("Arch Name: " + obj['arch_name'], tab=2))
             for config in supported_configs:
                 self.logger.info("Config: %-20s\t Status: %-10s", config, obj[config])
+
+    def formatted_output(self):
+        width = len(max(supported_configs, key=len)) * 2
+        out = 'Compile Test Results:\n'
+        for obj in self.results:
+            out += '\t%s results:\n' % obj['arch_name']
+            for config in supported_configs:
+                out += ('\t\t%-' + str(width) + 's: %s\n') % (config, obj[config])
+
+        return out + '\n\n'
 
     def json_config(self, schema, cfg):
         if not os.path.exists(os.path.abspath(cfg)):
