@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from jsonschema import validators, validate, Draft4Validator
+from jsonschema import validators, validate, Draft4Validator, RefResolver
 from jsonmerge import merge
 import logging
 import io
@@ -172,7 +172,9 @@ class JSONParser(object):
 
         return data, status
 
-    def __init__(self, schema, cfg, merge_list=[], extend_defaults=False,
+    def __init__(self, schema, cfg, merge_list=[],
+                 extend_defaults=False,
+                 ref_resolver=False, ref_dir=os.getcwd(),
                  parse_include=False, base_dir=os.getcwd(),
                  os_env=False, opt_env={}, logger=None):
         """
@@ -210,9 +212,17 @@ class JSONParser(object):
 
         if extend_defaults is True:
             FillDefaultValidatingDraft4Validator = self._extend_with_default(Draft4Validator)
-            FillDefaultValidatingDraft4Validator(self.schema).validate(data)
+            if ref_resolver is True:
+                resolver = RefResolver('file://' + os.path.abspath(ref_dir) + '/', self.schema)
+                FillDefaultValidatingDraft4Validator(self.schema, resolver=resolver).validate(data)
+            else:
+                FillDefaultValidatingDraft4Validator(self.schema).validate(data)
         else:
-            validate(data, self.schema)
+            if ref_resolver is True:
+                resolver = RefResolver('file://' + os.path.abspath(ref_dir) + '/', self.schema)
+                Draft4Validator(schema, resolver=resolver).validate(data)
+            else:
+                validate(data, self.schema)
 
 
         self.data = data
