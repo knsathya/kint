@@ -5,6 +5,7 @@ from jsonschema import validators, validate, Draft4Validator
 from jsonmerge import merge
 import logging
 import io
+import collections
 
 # Make it work for Python 2+3 and with Unicode
 try:
@@ -59,13 +60,13 @@ class JSONParser(object):
 
         pattern = re.compile(r'(\${(.*)})')
 
-        if type(data) is dict:
+        if isinstance(data, collections.Mapping):
             for key, value in data.iteritems():
                 data[key] = self._sub_env(value, env_opt)
-        elif type(data) is list or type(data) is type:
+        elif isinstance(data, (list, tuple)):
             for index, value in enumerate(data):
                 data[index] = self._sub_env(value, env_opt)
-        elif type(data) is str or type(data) is unicode:
+        elif isinstance(data, (str, unicode)):
             replaced = pattern.sub(lookup, data)
             if replaced is not None:
                 return replaced
@@ -98,13 +99,13 @@ class JSONParser(object):
 
         pattern = re.compile(r'(\${#include <(.*\.json)>})')
 
-        if type(data) is dict:
+        if isinstance(data, collections.Mapping):
             for key, value in data.iteritems():
                 data[key] = self._sub_include(in_file, value, base_dir)
-        elif type(data) is list or type(data) is type:
+        elif isinstance(data, (list, tuple)):
             for index, value in enumerate(data):
                 data[index] = self._sub_include(in_file, value, base_dir)
-        elif type(data) is str or type(data) is unicode:
+        elif isinstance(data, (str, unicode)):
             #print data, type(data)
             replaced = pattern.sub(lookup, data)
             if replaced is not None:
