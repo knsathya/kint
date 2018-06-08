@@ -94,7 +94,18 @@
                         "default": false
                     }
                 }
-            }
+            },
+            "default": [
+                {
+                    "arch_name": "x86_64"
+                },
+                {
+                    "arch_name": "i386"
+                },
+                {
+                    "arch_name": "arm64"
+                }
+            ]
         },
         "results-template": {
             "type": "array",

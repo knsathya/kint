@@ -80,24 +80,37 @@ class JSONParser(object):
         if not data:
             return data
 
-        def lookup(match):
-
-            if len(match.groups()) > 1:
-                print match.groups(), base_dir
-                new_inc_file = os.path.abspath(os.path.join(base_dir, match.group(2)))
-                if new_inc_file == os.path.abspath(in_file):
-                    self.logger.warn("Warning: Circular dependency detected %s included in %s",
-                                     new_inc_file, os.path.abspath(in_file))
-                else:
-                    new_data, new_status = self._get_json_data(new_inc_file, True, base_dir, True)
-                    if new_status is True:
-                        return new_data
+        def pattern_match(data):
+            def lookup(match):
+                if len(match.groups()) > 1:
+                    new_inc_file = os.path.abspath(os.path.join(base_dir, match.group(2)))
+                    if new_inc_file == os.path.abspath(in_file):
+                        self.logger.warn("Warning: Circular dependency detected %s included in %s",
+                                         new_inc_file, os.path.abspath(in_file))
                     else:
-                        self.logger.warn("Not found valid data in %s", new_inc_file)
+                        new_data, new_status = self._get_json_data(new_inc_file, True, base_dir, True)
+                        if new_status is True:
+                            if len(match.groups()) > 3:
+                                keys = match.group(4).split('/')
+                                tmp = None
+                                for key in keys:
+                                    if key:
+                                        tmp = new_data[key]
+                                return tmp
+                            else:
+                                return new_data
+                        else:
+                            self.logger.warn("Not found valid data in %s", new_inc_file)
 
-            return match.group(1)
+                return match.group(1)
 
-        pattern = re.compile(r'(\${#include <(.*\.json)>})')
+            pattern = r'(\$\(#include <(.*\.json)(#/(.*))?>\))'
+            matchobj = re.search(pattern, data, 0)
+
+            if matchobj:
+                return lookup(matchobj)
+            else:
+                return data
 
         if isinstance(data, collections.Mapping):
             for key, value in data.iteritems():
@@ -106,8 +119,7 @@ class JSONParser(object):
             for index, value in enumerate(data):
                 data[index] = self._sub_include(in_file, value, base_dir)
         elif isinstance(data, (str, unicode)):
-            #print data, type(data)
-            replaced = pattern.sub(lookup, data)
+            replaced = pattern_match(data)
             if replaced is not None:
                 return replaced
             else:
@@ -168,7 +180,7 @@ class JSONParser(object):
             self.logger.debug("Optional Env sub is enabled")
             data = sub_env(data, env_opt)
 
-        self.logger.debug("Returning satus %s", status)
+        self.logger.debug("Returning status %s", status)
 
         return data, status
 
@@ -214,6 +226,7 @@ class JSONParser(object):
             FillDefaultValidatingDraft4Validator = self._extend_with_default(Draft4Validator)
             if ref_resolver is True:
                 resolver = RefResolver('file://' + os.path.abspath(ref_dir) + '/', self.schema)
+                self.logger.info(resolver.base_uri)
                 FillDefaultValidatingDraft4Validator(self.schema, resolver=resolver).validate(data)
             else:
                 FillDefaultValidatingDraft4Validator(self.schema).validate(data)
@@ -228,9 +241,13 @@ class JSONParser(object):
         self.data = data
 
     def get_cfg(self):
-
         return self.data
 
+    def print_cfg(self):
+        self.logger.info(json.dumps(self.data, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False))
+
+    def print_schema(self):
+        self.logger.info(json.dumps(self.schema, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False))
 
     def gen_final_config(self, outfile=None):
         str_ = json.dumps(self.data, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
@@ -249,7 +266,11 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(message)s')
     logger.setLevel(logging.DEBUG)
 
-    obj = JSONParser(schema='../config-spec/device-schema.json', cfg='../config/drgn410c-device.json',
-                     extend_defaults=True, base_dir='../config', parse_include=True, logger=logger)
+    obj = JSONParser(schema='../config/kint-schema.json', cfg='../config/dev-bkc-staging.json',
+                     extend_defaults=True,
+                     ref_resolver=True, ref_dir='../config',
+                     base_dir='../config', parse_include=True,
+                     os_env=True, opt_env={},
+                     logger=logger)
 
     print json.dumps(obj.data, indent=4, sort_keys=True)

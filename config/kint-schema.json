@@ -1,5 +1,4 @@
 {
-    "id": "https://git-amr-4.devtools.intel.com/gerrit/gitweb?p=sathya-utils.git#",
     "$schema": "http://json-schema.org/draft-06/schema#",
     "description": "DEV-BKC/LTS kernel integration schema",
     "type": "object",
@@ -59,95 +58,6 @@
                 }
             }
         },
-        "smtp-params": {
-            "type": "object",
-            "properties": {
-                "smtp-server": {
-                    "description": "SMTP server name",
-                    "type": "string",
-                    "default": "smtp.intel.com"
-                },
-                "smtp-port": {
-                    "description": "SMTP port number",
-                    "type": "integer",
-                    "minimum": 0,
-                    "default": 0
-                },
-                "smtp-authentication": {
-                    "description": "SMTP Authentication",
-                    "enum": [
-                        "TLS",
-                        "None"
-                    ],
-                    "default": "None"
-                }
-            }
-        },
-        "email-params": {
-            "type": "object",
-            "description": "Email related parameters",
-            "required": [
-                "from",
-                "to"
-            ],
-            "properties": {
-                "from": {
-                    "description": "Senders email address",
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-                },
-                "to": {
-                    "description": "Receivers email address seperated by comma",
-                    "type": "string"
-                },
-                "cc": {
-                    "description": "Receivers CC email address seperated by comma",
-                    "type": "string"
-                }
-            }
-        },
-        "compile-test-params": {
-
-            "properties": {
-                "arch_name": {
-                    "description": "ARCH name used for compilation",
-                    "enum": [
-                        "x86_64",
-                        "i386",
-                        "arm64"
-                    ]
-                },
-                "compiler_options": {
-                    "description": "Compiler Options",
-                    "type": "object",
-                    "properties": {
-                        "CC":  { "type": "string", "default": "" },
-                        "cflags": { "type": "array", "items": { "type":"string" }, "default": [] }
-                    },
-                    "default": { "CC": "", "cflags": [] }
-                },
-                "allyesconfig": {
-                    "description": "Enable allyesconfig compilation",
-                    "type": "boolean",
-                    "default": false
-                },
-                "allmodconfig": {
-                    "description": "Enable allmodconfig compilation",
-                    "type": "boolean",
-                    "default": false
-                },
-                "allnoconfig": {
-                    "description": "Enable allnoconfig compilation",
-                    "type": "boolean",
-                    "default": false
-                },
-                "defconfig": {
-                    "description": "Enable allnoconfig compilation",
-                    "type": "boolean",
-                    "default": false
-                }
-            }
-        },
         "static-analysis-params": {
             "type": "object",
             "properties": {
@@ -199,10 +109,7 @@
             "type": "object",
             "properties": {
                 "compile-tests": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/compile-test-params"
-                    }
+                    "$ref": "ktest-schema.json#/properties/test-list"
                 },
                 "static-analysis": {
                     "$ref": "#/definitions/static-analysis-params"

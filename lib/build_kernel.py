@@ -136,6 +136,41 @@ class KernelConfig(object):
 
         return True
 
+def is_valid_kernel(src, logger=None):
+    logger = logger or logging.getLogger(__name__)
+
+    def parse_makefile(data, field):
+        regex = r"%s = (.*)" % field
+        match = re.search(regex, data)
+        if match:
+            return match.group(1)
+        else:
+            None
+
+    if os.path.exists(os.path.join(src, 'Makefile')):
+        with open(os.path.join(src, 'Makefile'), 'r') as makefile:
+            _makefile = makefile.read()
+            if parse_makefile(_makefile, "VERSION") is None:
+                logger.error("Missing VERSION field in Makefile")
+                return False
+            if parse_makefile(_makefile, "PATCHLEVEL") is None:
+                logger.error("Missing PATCHLEVEL field in Makefile")
+                return False
+            if parse_makefile(_makefile, "SUBLEVEL") is None:
+                logger.error("Missing SUBLEVEL field in Makefile")
+                return False
+            if parse_makefile(_makefile, "EXTRAVERSION") is None:
+                logger.warn("Missing EXTRAVERSION field in Makefile")
+            if parse_makefile(_makefile, "NAME") is None:
+                logger.error("Missing NAME field in Makefile")
+                return False
+
+        return True
+
+    logger.error("%s Invalid kernel source directory", src)
+
+    return False
+
 class BuildKernel(object):
 
     def __init__(self, src_dir=None, arch=None, cc=None, cflags=None, out_dir=None, threads=None, logger=None):

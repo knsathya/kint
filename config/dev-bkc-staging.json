@@ -1,0 +1,179 @@
+{
+    "remote-list": [
+        { "name": "coe-tracker",  "url": "ssh://skuppusw@git-amr-4.devtools.intel.com/kernel-coe-tracker" },
+        { "name": "dev-bkc", "url": "ssh://skuppusw@git-amr-4.devtools.intel.com/kernel-bkc" },
+        { "name": "linux-next",  "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git" }
+    ],
+
+    "email-options": {
+        "from": "sathyanarayanan.kuppuswamy@intel.com",
+        "to": "sathyanarayanan.kuppuswamy@intel.com",
+        "cc": "sathyanarayanan.kuppuswamy@intel.com"
+    },
+
+    "test-profiles": {
+        "compile-tests": "$(#include <ktest-sample.json#/test-list>)",
+        "static-analysis": { "checkpatch": false, "aiaiai": false },
+        "bat-tests": [
+            { "platform-name": "GPMRB", "Android": false, "Clear-OS": false, "Yocto": false, "Debian": false }
+        ]
+    },
+
+    "repos": [
+        {
+            "repo-name": "dev-bkc-base",
+            "source-list": [
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/drm" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/camera" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/audio" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/usb" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/comms" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/sensors" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/wwan" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/em" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/tm" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/pmic" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/touchscreen" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/video" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/security" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/lpss" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/storage" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/core" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/pm" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/network", "skip": true },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/sof" }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "dev/staging/base",
+                    "merge-mode": "merge",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true, "add-log": true, "send-email": true, "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true,
+                            "use-remote-cache": true,
+                            "upload-remote-cache": false,
+                            "remote-cache-params": {
+                                "server-name": "oak-00.jf.intel.com",
+                                "share-point": "pkt",
+                                "username": "",
+                                "password": "",
+                                "sync-protocol": "smb",
+                                "sync-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mget *"],
+                                "upload-protocol": "smb",
+                                "upload-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mput *"]
+                            }
+                        }
+                    },
+                    "upload-options": { "mode": "force-push", "url": "coe-tracker", "branch": "coe-tracker/sandbox-skuppusw/test" },
+                    "test-options": {
+                        "profiles": [ "compile-tests" ],
+                        "send-email": true,
+                        "subject-prefix": "DEV BKC Base"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "dev-bkc-yocto",
+            "source-list": [
+                { "use-local": true, "url": "", "branch": "dev/staging/base" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/yocto" }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "dev-bkc/release/yocto",
+                    "merge-mode": "merge",
+                    "test-branch": true,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true, "add-log": true, "send-email": true, "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true,
+                            "use-remote-cache": true,
+                            "upload-remote-cache": false,
+                            "remote-cache-params": {
+                                "server-name": "oak-00.jf.intel.com",
+                                "share-point": "pkt",
+                                "username": "",
+                                "password": "",
+                                "sync-protocol": "smb",
+                                "sync-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mget *"],
+                                "upload-protocol": "smb",
+                                "upload-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mput *"]
+                            }
+                        }
+                    },
+                    "upload-options": { "mode": "force-push", "url": "coe-tracker", "branch": "coe-tracker/sandbox-skuppusw/test" },
+                    "test-options": {
+                        "profiles": [ "compile-tests" ],
+                        "send-email": true,
+                        "subject-prefix": "DEV BKC Yocto"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "dev-bkc-android",
+            "source-list": [
+                { "use-local": true, "url": "", "branch": "dev/staging/base" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/drm-android" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/trusty" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/google" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/google-fixes" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/dnt" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/camera-android" },
+                { "use-local": false, "url": "coe-tracker", "branch": "dev/staging/presi" }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "dev-bkc/release/android",
+                    "merge-mode": "merge",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true, "add-log": true, "send-email": true, "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true,
+                            "use-remote-cache": true,
+                            "upload-remote-cache": false,
+                            "remote-cache-params": {
+                                "server-name": "oak-00.jf.intel.com",
+                                "share-point": "pkt",
+                                "username": "",
+                                "password": "",
+                                "sync-protocol": "smb",
+                                "sync-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mget *"],
+                                "upload-protocol": "smb",
+                                "upload-options": ["-c", "prompt OFF; recurse ON; cd dev-rr-cache/kernel-bkc; mput *"]
+                            }
+                        }
+                    },
+                    "upload-options": { "mode": "force-push", "url": "coe-tracker", "branch": "coe-tracker/sandbox-skuppusw/test" },
+                    "test-options": {
+                        "profiles": [ "compile-tests" ],
+                        "send-email": true,
+                        "subject-prefix": "DEV BKC Android"
+                    }
+                }
+            ]
+        }
+    ],
+
+    "kint-list": [
+        {
+            "dep-repos": [],
+            "kint-repo": "dev-bkc-base"
+        },
+        {
+            "dep-repos": [ "dev-bkc-base" ],
+            "kint-repo": "dev-bkc-yocto"
+        },
+        {
+            "dep-repos": [ "dev-bkc-base" ],
+            "kint-repo": "dev-bkc-android"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Email config schema",
+    "type": "object",
+    "required": [
+        "smtp-server",
+        "from",
+        "to"
+    ],
+    "properties": {
+        "smtp-server": {
+            "description": "SMTP server name",
+            "type": "string"
+        },
+        "smtp-port": {
+            "description": "SMTP port number",
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+        },
+        "smtp-authentication": {
+            "type": "string",
+            "description": "SMTP Authentication",
+            "enum": [
+                "TLS",
+                ""
+            ],
+            "default": ""
+        },
+        "smtp-username": {
+            "type": "string",
+            "description": "SMTP Username",
+            "default": ""
+        },
+        "smtp-password": {
+            "type": "string",
+            "description": "SMTP password",
+            "default": ""
+        },
+        "from": {
+            "description": "Senders email address",
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+        },
+        "to": {
+            "description": "Receivers email address seperated by comma",
+            "type": "string"
+        },
+        "cc": {
+            "description": "Receivers CC email address seperated by comma",
+            "type": "string",
+            "default": ""
+        },
+        "bcc": {
+            "description": "Receivers BCC email address seperated by comma",
+            "type": "string",
+            "default": ""
+        }
+    }
+}

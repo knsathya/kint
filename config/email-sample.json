@@ -1,0 +1,6 @@
+{
+    "smtp-server": "smtp.intel.com",
+    "from": "sathyanarayanan.kuppuswamy@intel.com",
+    "to": "sathyanarayanan.kuppuswamy@intel.com",
+    "cc": "sathyanarayanan.kuppuswamy@intel.com"
+}

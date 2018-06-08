@@ -97,7 +97,7 @@ class KernelTest(object):
             self.logger.error("Invalid schema file")
             return
 
-        parser = JSONParser(cfg, schema, logger=self.logger)
+        parser = JSONParser(cfg, schema, extend_defaults=True, logger=self.logger)
 
         self.cfg = parser.get_cfg()
 
@@ -182,10 +182,12 @@ def add_cli_options(parser):
                         dest='config_list',
                         help='list of configs to be tested')
     parser.add_argument('-s', '--schema-file', action='store', dest='config_schema',
-                        default=os.path.join(os.getcwd(), 'kint-configs', 'ktest-schema.json'),
+                        default=os.path.join(os.getcwd(), 'config', 'test-configs',
+                                             'kernel-compile-test-schema.json'),
                         help='Kernel test schema json file')
     parser.add_argument('-c', '--config-file', action='store', dest='config_data',
-                        default=os.path.join(os.getcwd(), 'kint-configs', 'ktest-sample.json'),
+                        default=os.path.join(os.getcwd(), 'kint-configs', 'test-configs',
+                                             'kernel-compile-test-sample.json'),
                         help='Kernel test config json file')
     parser.add_argument('-l', '--log', action='store', dest='log_file',
                         nargs='?',

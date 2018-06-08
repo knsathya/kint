@@ -1,0 +1,308 @@
+{
+    "remote-list": [
+        {
+            "name": "coe-tracker",
+            "url": "ssh://skuppusw@git-amr-4.devtools.intel.com/kernel-coe-tracker"
+        },
+        {
+            "name": "otc-usb-xhci",
+            "url": "git://git-amr-4.devtools.intel.com/otc_usb-xhci.git"
+        },
+        {
+            "name": "otc-usb-typec",
+            "url": "git://git-amr-4.devtools.intel.com/otc_usb-typec.git"
+        },
+        {
+            "name": "otc-usb-gadget",
+            "url": "git://git-amr-4.devtools.intel.com/otc_usb-gadget.git"
+        },
+        {
+            "name": "dev-bkc",
+            "url": "ssh://skuppusw@git-amr-4.devtools.intel.com/kernel-bkc"
+        },
+        {
+            "name": "linux-next",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
+        }
+    ],
+    "email-options": {
+        "from": "sathyanarayanan.kuppuswamy@intel.com",
+        "to": "sathyanarayanan.kuppuswamy@intel.com",
+        "cc": "sathyanarayanan.kuppuswamy@intel.com"
+    },
+    "test-profiles": {
+        "compile-tests": [
+            {
+                "arch_name": "x86_64",
+                "compiler_options": {
+                    "CC": "",
+                    "cflags": []
+                },
+                "allyesconfig": true,
+                "allmodconfig": true,
+                "allnoconfig": true,
+                "defconfig": true
+            },
+            {
+                "arch_name": "arm64",
+                "compiler_options": {
+                    "CC": "aarch64-linux-gnu-",
+                    "cflags": []
+                },
+                "allyesconfig": true,
+                "allmodconfig": true,
+                "allnoconfig": true,
+                "defconfig": true
+            }
+        ],
+        "static-analysis": {
+            "checkpatch": false,
+            "aiaiai": false
+        },
+        "bat-tests": [
+            {
+                "platform-name": "GPMRB",
+                "Android": false,
+                "Clear-OS": false,
+                "Yocto": false,
+                "Debian": false
+            }
+        ]
+    },
+    "repos": [
+        {
+            "repo-name": "otc-usb-xhci",
+            "source-list": [
+                {
+                    "use-local": false,
+                    "url": "otc-usb-xhci",
+                    "branch": "for-eywa"
+                }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "coe/usb/xhci-usb",
+                    "merge-mode": "rebase",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true,
+                        "add-log": true,
+                        "send-email": true,
+                        "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true
+                        }
+                    },
+                    "upload-options": {
+                        "mode": "force-push",
+                        "url": "coe-tracker",
+                        "branch": "coe/usb/xhci-usb"
+                    },
+                    "test-options": {
+                        "profiles": [
+                            "compile-tests"
+                        ],
+                        "send-email": true,
+                        "subject-prefix": "OTC USB XHCI"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "otc-usb-typec",
+            "source-list": [
+                {
+                    "use-local": false,
+                    "url": "otc-usb-typec",
+                    "branch": "for-eywa"
+                }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "coe/usb/typec-usb",
+                    "merge-mode": "rebase",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true,
+                        "add-log": true,
+                        "send-email": true,
+                        "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true
+                        }
+                    },
+                    "upload-options": {
+                        "mode": "force-push",
+                        "url": "coe-tracker",
+                        "branch": "coe/usb/typec-usb"
+                    },
+                    "test-options": {
+                        "profiles": [
+                            "compile-tests"
+                        ],
+                        "send-email": true,
+                        "subject-prefix": "OTC USB TYPEC"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "otc-usb-gadget",
+            "source-list": [
+                {
+                    "use-local": false,
+                    "url": "otc-usb-gadget",
+                    "branch": "for-eywa"
+                }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "coe/usb/gadget-usb",
+                    "merge-mode": "rebase",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true,
+                        "add-log": true,
+                        "send-email": true,
+                        "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true
+                        }
+                    },
+                    "upload-options": {
+                        "mode": "force-push",
+                        "url": "coe-tracker",
+                        "branch": "coe/usb/gadget-usb"
+                    },
+                    "test-options": {
+                        "profiles": [
+                            "compile-tests"
+                        ],
+                        "send-email": true,
+                        "subject-prefix": "OTC USB Gadget"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "pkt-usb",
+            "source-list": [
+                {
+                    "use-local": false,
+                    "url": "coe-tracker",
+                    "branch": "coe/usb/pkt-usb"
+                }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "coe/usb/pkt-usb",
+                    "merge-mode": "rebase",
+                    "test-branch": false,
+                    "upload-copy": false,
+                    "merge-options": {
+                        "no-ff": true,
+                        "add-log": true,
+                        "send-email": true,
+                        "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true
+                        }
+                    },
+                    "upload-options": {
+                        "mode": "force-push",
+                        "url": "coe-tracker",
+                        "branch": "coe/usb/pkt-usb"
+                    },
+                    "test-options": {
+                        "profiles": [
+                            "compile-tests"
+                        ],
+                        "send-email": true,
+                        "subject-prefix": "PKT USB"
+                    }
+                }
+            ]
+        },
+        {
+            "repo-name": "usb-staging",
+            "source-list": [
+                {
+                    "use-local": true,
+                    "url": "",
+                    "branch": "coe/usb/xhci-usb"
+                },
+                {
+                    "use-local": true,
+                    "url": "",
+                    "branch": "coe/usb/gadget-usb"
+                },
+                {
+                    "use-local": true,
+                    "url": "",
+                    "branch": "coe/usb/typec-usb"
+                },
+                {
+                    "use-local": true,
+                    "url": "",
+                    "branch": "coe/usb/pkt-usb"
+                }
+            ],
+            "dest-list": [
+                {
+                    "local-branch": "dev/staging/usb",
+                    "merge-mode": "rebase",
+                    "test-branch": true,
+                    "upload-copy": false,
+                    "generate-output": false,
+                    "merge-options": {
+                        "no-ff": true,
+                        "add-log": true,
+                        "send-email": true,
+                        "use-rr-cache": true,
+                        "rr-cache": {
+                            "use-auto-merge": true
+                        }
+                    },
+                    "upload-options": {
+                        "mode": "force-push",
+                        "url": "coe-tracker",
+                        "branch": "coe-tracker/sandbox-skuppusw/test"
+                    },
+                    "test-options": {
+                        "profiles": [
+                            "compile-tests"
+                        ],
+                        "send-email": true,
+                        "subject-prefix": "PKT USB Staging"
+                    },
+                    "output-options": {
+                        "quilt": {
+                            "quilt-folder": "",
+                            "format-options": [],
+                            "upload-copy": false,
+                            "upload-options": {
+                                "mode": "force-push",
+                                "url": "coe-tracker",
+                                "branch": "coe-tracker/sandbox-skuppusw/test"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "kint-list": [
+        {
+            "dep-repos": [
+                "otc-usb-xhci",
+                "otc-usb-typec",
+                "otc-usb-gadget",
+                "pkt-usb"
+            ],
+            "kint-repo": "usb-staging"
+        }
+    ]
+}
