@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Kernel static analysis schema",
+    "type": "object",
+    "$ref": "#/definitions/static-analysis-params",
+    "default": {
+
+    },
+    "definitions": {
+        "static-analysis-params": {
+            "type": "object",
+            "properties": {
+                "checkpatch": {
+                    "description": "Enable checkpatch static analysis",
+                    "type": "boolean",
+                    "default": false
+                },
+                "aiaiai": {
+                    "description": "Enable aiaiai static analysis",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        }
+    }
+}

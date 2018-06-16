@@ -223,12 +223,9 @@ class BuildKernel(object):
     def _exec_cmd(self, cmd, log=False, dryrun=False):
         self.logger.debug("BuildKernel: Executing %s", ' '.join(map(lambda x: str(x), cmd)))
 
-        if dryrun is True:
-            return 0, '', ''
-
         shell = PyShell(logger=self.logger)
 
-        return shell.send_cmd(args=cmd, out_log=log)
+        return shell.cmd(*cmd, out_log=log, dry_run=dryrun)
 
     def _make_target(self, target=None, flags=[], log=False, dryrun=False):
 

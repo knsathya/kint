@@ -50,11 +50,11 @@ class KernelInteg(object):
         """
         silent = kwargs.pop('silent', False)
 
-        ret_code, std_out, std_err = self.git_shell.send_cmd(args=list(args), wd=kwargs.pop('wd', None))
+        ret_code, std_out, std_err = self.git.cmd(*args, **kwargs)
 
         if ret_code != 0:
             if silent is False:
-                self.logger.error(' '.join(self.git_shell.curr_cmd.cmd) + " command failed")
+                self.logger.error(' '.join(self.git.curr_cmd) + " command failed")
                 self.logger.error(std_err)
                 err_msg = "%s. Code: %s" % (std_err.strip(), ret_code)
                 raise Exception(err_msg)
@@ -77,31 +77,31 @@ class KernelInteg(object):
         """
         yes = {'yes', 'y', 'ye', ''}
 
-        ret_code, std_out, std_err = self.git_shell.send_cmd(args=list(args), wd=kwargs.pop('wd', None))
+        ret_code, std_out, std_err = self.git.cmd(*args, **kwargs)
 
         if ret_code != 0:
             use_manual_merge = True
-            self.logger.error(' '.join(self.git_shell.curr_cmd.cmd) + " command failed")
+            self.logger.error(' '.join(self.git.curr_cmd) + " command failed")
             self.logger.error(std_err)
 
-            status = self.git_shell.send_cmd(args=['diff'])[1]
+            status = self.git.cmd('diff')[1]
 
             if kwargs.pop('auto_merge', False) == True and ">>>>>" not in status and "<<<<<<" not in status:
                 if "rebase" in list(args):
                     while True:
-                        self.git_shell.send_cmd(args=['rebase', '--continue'])
+                        self.git.cmd('rebase', '--continue')
                         if not os.path.exists(os.path.join(self.repo_dir, '.git/rebase-apply')):
                             break
-                    status = self.git_shell.send_cmd(args=['diff'])[1]
+                    status = self.git.cmd('diff')[1]
                     if not ">>>>>" in status and not "<<<<<<" in status:
                         use_manual_merge = False
                 elif "merge" in list(args) or "pull" in list(args):
-                    self.git_shell.send_cmd(args=['commit','-as', '--no-edit'])
+                    self.git.cmd('commit','-as', '--no-edit')
                     use_manual_merge = False
 
             if use_manual_merge is True:
                 if  kwargs.pop('send_email', False) is True:
-                    status = self.git_shell.send_cmd(args=['status'])[1]
+                    status = self.git.cmd('status')[1]
                     content = "Following is the status of command: \n" + ' '.join(args) + '\n'
                     content += 'Stdout Message:\n\n' + std_out if len(std_out) > 0 else "None" + '\n'
                     content += 'Error Message:\n\n' + std_err if len(std_err) > 0 else "None" + '\n'
@@ -113,7 +113,7 @@ class KernelInteg(object):
                     print 'Please resolve the issue and then press y to continue'
                     choice = raw_input().lower()
                     if choice in yes:
-                        status = self.git_shell.send_cmd(args=['diff'])[1]
+                        status = self.git.cmd('diff')[1]
                         if ">>>>>" in status or "<<<<<<" in status:
                             continue
                         else:
@@ -125,7 +125,7 @@ class KernelInteg(object):
         :param head: SHA ID
         :return: True if the SHA ID or head is valid, otherwise return False.
         """
-        ret, out, err  = self.git_shell.send_cmd(args=['show', head])
+        ret, out, err  = self.git.cmd('show', head)
         if ret == 0:
             return True
 
@@ -170,7 +170,7 @@ class KernelInteg(object):
         self.skip_rr_cache = skip_rr_cache
         self.subject_prefix = subject_prefix
         # All git commands will be executed in repo directory.
-        self.git_shell = GitShell(wd=self.repo_dir, logger=self.logger)
+        self.git = GitShell(wd=self.repo_dir, logger=self.logger)
 
         # git init
         self.logger.info(format_h1("Initalizing repo", tab=2))
@@ -443,10 +443,10 @@ class KernelInteg(object):
                 rmtree(quilt_folder, ignore_errors=True)
 
             os.makedirs(quilt_folder)
-            tail = self.git_shell.send_cmd(['rev-parse', branch_name])[1]
-            err_code, output, err =  self.git_shell.send_cmd(['format-patch', '-C', '-M',
-                                                              head.strip() + '..' + tail.strip(),
-                                                              '-o', quilt_folder])
+            tail = self.git.cmd('rev-parse', branch_name)[1]
+            err_code, output, err =  self.git.cmd('format-patch', '-C', '-M',
+                                                        head.strip() + '..' + tail.strip(),
+                                                        '-o', quilt_folder)
             if err_code == 0:
                 def get_file_name(path):
                     head, tail =  os.path.split(path)
@@ -502,7 +502,7 @@ class KernelInteg(object):
                     cmd.append(remote_params['username'])
 
                 cmd = ['smbclient'] + cmd + remote_params['sync-options']
-                ret, out, err = sh.send_cmd(cmd, wd=rr_cache_dir)
+                ret, out, err = sh.cmd(*cmd, wd=rr_cache_dir)
                 if ret != 0:
                     self.logger.error(ret)
                     self.logger.error(err)
@@ -538,14 +538,14 @@ class KernelInteg(object):
                         cmd.append(remote_params['username'])
 
                     cmd = ['smbclient'] + cmd + remote_params['upload-options']
-                    ret, out, err = sh.send_cmd(cmd, wd=os.path.join(self.repo_dir,'.git', 'rr-cache'))
+                    ret, out, err = sh.cmd(*cmd, wd=os.path.join(self.repo_dir,'.git', 'rr-cache'))
                     self.logger.error(ret)
                     self.logger.error(err)
                     self.logger.error(out)
 
         if params['use-remote-cache'] == True  and os.path.exists(rr_cache_old_dir):
             rmtree(rr_cache_dir, ignore_errors=True)
-            sh.send_cmd(['mv', rr_cache_old_dir, rr_cache_dir])
+            sh.cmd('mv', rr_cache_old_dir, rr_cache_dir)
 
     def _merge_branches(self, mode, merge_list, dest, params):
         """
@@ -665,7 +665,7 @@ class KernelInteg(object):
             if len(repo['dest-list']) > 1:
                 base_repo = repo['dest-list'][0]
                 for dest_repo in repo['dest-list']:
-                    ret, out, err = self.git_shell(['diff', base_repo, dest_repo])
+                    ret, out, err = self.git('diff', base_repo, dest_repo)
                     if ret != 0:
                         status = False
                         break

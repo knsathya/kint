@@ -8,45 +8,37 @@ from Queue import Queue, Empty
 
 GIT_COMMAND_PATH='/usr/bin/git'
 
-class Command(object):
-    def __init__(self, cmd=[], wd=None):
-        self.cmd = cmd
-        self.wd = wd
-        self.out = ''
-        self.err = ''
-        self.ret = 0
-
-    def curr_cmd(self):
-        return self.cmd
-
-    def err_code(self):
-        return self.ret
-
-    def cmd_out(self):
-        return self.out
-
-    def cmd_err(self):
-        return self.err
-
 class PyShell(object):
-    def __init__(self, wd=os.getcwd(),  stream_stdout=False, logger=None):
+    def __init__(self, wd=os.getcwd(), stream_stdout=False, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.wd = wd
         self.stream_stdout = stream_stdout
-        self.curr_cmd = Command(wd=wd)
+        self.curr_cmd = None
+        self.cmd_out = ''
+        self.cmd_err = ''
+        self.cmd_ret = 0
+        self.dry_run = False
 
-    def send_cmd(self, args=[], wd=None, out_log=False):
+    def dryrun(self, status=False):
+        self.dry_run = status
+
+    def _cmd(self, args=[], wd=None, out_log=False, dry_run=False, shell=False):
         output = list()
         error = list()
         wd = wd if wd is not None else self.wd
 
-        self.logger.info("Executing " + ' '.join(list(args)))
+        self.logger.info(args)
+        self.logger.info('wd=%s, out_log=%s, dry_run=%s, shell=%s' % (wd, out_log, dry_run, shell))
+        self.logger.debug("Executing " + ' '.join(list(args)))
 
         if len(args) < 0:
-            return
+            return -1, '', 'Argument invalid error'
 
-        self.curr_cmd.cmd = args
-        self.curr_cmd.wd = wd
+        if dry_run or self.dry_run:
+            return 0, '', ''
+
+        self.curr_cmd = args
+        self.wd = wd
 
         io_q = Queue()
         var_q = Queue()
@@ -59,7 +51,7 @@ class PyShell(object):
             if not stream.closed:
                 stream.close()
 
-        process = Popen(list(args), stdout=PIPE, stderr=PIPE, cwd=wd)
+        process = Popen(list(args), stdout=PIPE, stderr=PIPE, cwd=wd, shell=shell)
 
         def printer():
             while True:
@@ -108,16 +100,26 @@ class PyShell(object):
             if len(_error) > 0 and out_log is True:
                 self.logger.error("STDERR: " + _error)
 
-        self.curr_cmd.out = ''.join(output)
-        self.curr_cmd.err = ''.join(error)
-        self.curr_cmd.ret = process.returncode
+        self.cmd_out = ''.join(output)
+        self.cmd_err = ''.join(error)
+        self.cmd_ret = process.returncode
 
-        return self.curr_cmd.ret, self.curr_cmd.out, self.curr_cmd.err
+        return self.cmd_ret, self.cmd_out, self.cmd_err
+
+    def cmd(self, *args, **kwargs):
+        return self._cmd(args=list(args), wd=kwargs.get('wd', self.wd),
+                         out_log=kwargs.get('out_log', False),
+                         dry_run=kwargs.get('dry_run', False),
+                         shell=kwargs.get('shell', False))
 
 class GitShell(PyShell):
-    def send_cmd(self, args=[], wd=None):
-        git_args = [GIT_COMMAND_PATH] +  args
-        return super(GitShell, self).send_cmd(args=git_args, wd=wd)
+    def cmd(self, *args, **kwargs):
+        return super(GitShell, self).cmd(GIT_COMMAND_PATH, *args, **kwargs)
+
+    def current_branch(self, wd=None, out_log=False, dry_run=False):
+        cmd_str = "branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
+        git_args = GIT_COMMAND_PATH + " " + cmd_str
+        return super(GitShell, self).cmd(git_args, wd=wd, out_log=out_log, dry_run=dry_run, shell=True)[1].strip()
 
 
 if __name__ == '__main__':
