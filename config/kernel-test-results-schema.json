@@ -1,0 +1,210 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Kernel test results schema",
+    "type": "object",
+    "$ref": "#/definitions/test-results",
+    "default": {
+    },
+    "definitions": {
+        "test-results": {
+            "type": "object",
+            "properties": {
+                "compile-test": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "arch_name"
+                        ],
+                        "properties": {
+                            "arch_name": {
+                                "description": "ARCH name used for compilation",
+                                "type": "string",
+                                "enum": [
+                                    "x86_64",
+                                    "i386",
+                                    "arm64"
+                                ]
+                            },
+                            "allyesconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "description": "Kernel allyesconfig status",
+                                        "type": "string",
+                                        "enum": [
+                                            "N/A",
+                                            "Passed",
+                                            "Failed"
+                                        ],
+                                        "default": "N/A"
+                                    },
+                                    "warning_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "error_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    }
+                                }
+                            },
+                            "allmodconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "description": "Kernel allmodconfig status",
+                                        "type": "string",
+                                        "enum": [
+                                            "N/A",
+                                            "Passed",
+                                            "Failed"
+                                        ],
+                                        "default": "N/A"
+                                    },
+                                    "warning_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "error_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    }
+                                }
+                            },
+                            "allnoconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "description": "Kernel allnoconfig status",
+                                        "type": "string",
+                                        "enum": [
+                                            "N/A",
+                                            "Passed",
+                                            "Failed"
+                                        ],
+                                        "default": "N/A"
+                                    },
+                                    "warning_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "error_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    }
+                                }
+                            },
+                            "defconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "description": "Kernel defconfig status",
+                                        "type": "string",
+                                        "enum": [
+                                            "N/A",
+                                            "Passed",
+                                            "Failed"
+                                        ],
+                                        "default": "N/A"
+                                    },
+                                    "warning_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "error_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    }
+                                }
+                            },
+                            "randconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {
+                                        "description": "Kernel randconfig status",
+                                        "type": "string",
+                                        "enum": [
+                                            "N/A",
+                                            "Passed",
+                                            "Failed"
+                                        ],
+                                        "default": "N/A"
+                                    },
+                                    "warning_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    },
+                                    "error_count": {
+                                        "description": "Total number of warnings",
+                                        "type": "integer",
+                                        "default": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "checkpatch": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "description": "Kernel checkpatch analysis results",
+                            "type": "string",
+                            "enum": [
+                                "N/A",
+                                "Passed",
+                                "Failed"
+                            ],
+                            "default": "N/A"
+                        },
+                        "warning_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "error_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        }
+                    }
+                },
+                "aiaiai": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "description": "Kernel AiAiAi analysis results",
+                            "type": "string",
+                            "enum": [
+                                "N/A",
+                                "Passed",
+                                "Failed"
+                            ],
+                            "default": "N/A"
+                        },
+                        "warning_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "error_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

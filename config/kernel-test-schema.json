@@ -1,0 +1,140 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Kernel test schema",
+    "type": "object",
+    "$ref": "#/definitions/test-params",
+    "default": {
+        "compile-config": {
+            "enable": false,
+            "test-list": [
+                {
+                    "arch_name": "x86_64"
+                },
+                {
+                    "arch_name": "i386"
+                },
+                {
+                    "arch_name": "arm64"
+                }
+            ]
+        },
+        "checkpatch-config": {
+            "enable": false
+        },
+        "aiaiai-config": {
+            "enable": false
+        }
+    },
+    "definitions": {
+        "test-params": {
+            "type": "object",
+            "properties": {
+                "compile-config": {
+                    "type": "object",
+                    "properties": {
+                        "enable": {
+                            "description": "Enable checkpatch static analysis",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "test-list": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": [
+                                    "arch_name"
+                                ],
+                                "properties": {
+                                    "arch_name": {
+                                        "description": "ARCH name used for compilation",
+                                        "enum": [
+                                            "x86_64",
+                                            "i386",
+                                            "arm64"
+                                        ]
+                                    },
+                                    "compiler_options": {
+                                        "description": "Compiler Options",
+                                        "type": "object",
+                                        "properties": {
+                                            "CC": {
+                                                "type": "string",
+                                                "default": ""
+                                            },
+                                            "cflags": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                },
+                                                "default": []
+                                            }
+                                        },
+                                        "default": {
+                                            "CC": "",
+                                            "cflags": []
+                                        }
+                                    },
+                                    "allyesconfig": {
+                                        "description": "Enable allyesconfig compilation",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "allmodconfig": {
+                                        "description": "Enable allmodconfig compilation",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "allnoconfig": {
+                                        "description": "Enable allnoconfig compilation",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "defconfig": {
+                                        "description": "Enable defconfig compilation",
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "randconfig": {
+                                        "description": "Enable randconfig compilation",
+                                        "type": "boolean",
+                                        "default": false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "checkpatch-config": {
+                    "type": "object",
+                    "properties": {
+                        "enable": {
+                            "description": "Enable checkpatch static analysis",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "source": {
+                            "description": "Checkpatch script path",
+                            "type": "string",
+                            "default": "scripts/checkpatch.pl"
+                        }
+                    }
+                },
+                "aiaiai-config": {
+                    "type": "object",
+                    "properties": {
+                        "enable": {
+                            "description": "Enable aiaiai static analysis",
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "source": {
+                            "description": "AiAiAi tool source link",
+                            "type": "string",
+                            "default": ""
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

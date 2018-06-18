@@ -116,24 +116,45 @@ class GitShell(PyShell):
     def cmd(self, *args, **kwargs):
         return super(GitShell, self).cmd(GIT_COMMAND_PATH, *args, **kwargs)
 
-    def current_branch(self, wd=None, out_log=False, dry_run=False):
-        cmd_str = "branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
-        git_args = GIT_COMMAND_PATH + " " + cmd_str
-        return super(GitShell, self).cmd(git_args, wd=wd, out_log=out_log, dry_run=dry_run, shell=True)[1].strip()
+    def valid(self,  **kwargs):
+        return True if os.path.exists(os.path.join(kwargs.get('wd', self.wd), '.git')) else False
 
+    def init(self, **kwargs):
+        if not self.valid(**kwargs):
+            self.cmd('init', '.', **kwargs)
+
+    def add_remote(self, name, url, override=False, **kwargs):
+        if override is True:
+            self.cmd('remote', 'remove', name, **kwargs)
+        self.cmd('remote', 'add', name, url, **kwargs)
+
+    def push(self, lbranch, remote, rbranch, force=False, use_refs=False, **kwargs):
+        if use_refs is True:
+            rbranch = 'refs/for/' + rbranch
+        if force is True:
+            return self.cmd('push','-f', remote, lbranch + ':' + rbranch, ** kwargs)
+        else:
+            return self.cmd('push', remote, lbranch + ':' + rbranch, **kwargs)
+
+    def current_branch(self, **kwargs):
+        cmd_str = GIT_COMMAND_PATH + " branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
+        return super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)[1].strip()
 
 if __name__ == '__main__':
 
     logger = logging.getLogger(__name__)
     logging.basicConfig(format='%(message)s')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     #sh = PyShell(wd='/home/sathya/pkroot/tmp', logger=logger)
-    sh = PyShell(wd='/home/sathya/pkroot/tmp', logger=logger)
+    #sh = PyShell(wd='/home/sathya/pkroot/tmp', logger=logger)
     #cmd = ['/usr/bin/git', 'merge', '--no-ff', '--log', 'coe-tracker' 'dev/staging/camera']
-    cmd = ['/usr/bin/make', '-j32', 'ARCH=arm64',
-           'O=/mnt/disk2/CodeBase/pkroot/tmp/out/arm64/allnoconfig',
-           '-C', '/mnt/disk2/CodeBase/pkroot/tmp', 'CROSS_COMPILE=aarch64-linux-gnu-']
+    #cmd = ['/usr/bin/make', '-j32', 'ARCH=arm64',
+           #'O=/mnt/disk2/CodeBase/pkroot/tmp/out/arm64/allnoconfig',
+           #'-C', '/mnt/disk2/CodeBase/pkroot/tmp', 'CROSS_COMPILE=aarch64-linux-gnu-']
+    #git = GitShell(wd='/home/sathya/CodeBase/linux/kernel/linux-current')
+    #git.add_remote('origin1', 'https://github.com/knsathya/linux.git')
+    #logger.info(git.current_branch())
     #cmd = ['show']
-    logger.info(sh.send_cmd(args=cmd))
+    #logger.info(sh.send_cmd(args=cmd))
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Production kernel output script
+# Production kernel release script
 #
 # Copyright (C) 2018 Sathya Kuppuswamy
 #
@@ -18,9 +18,8 @@
 
 import os
 import logging, logging.config
-import tempfile
 import argparse
-import glob
+import datetime
 import tarfile
 import inspect
 import shutil
@@ -30,11 +29,7 @@ from lib.decorators import format_h1
 from lib.pyshell import GitShell, PyShell
 from lib.build_kernel import is_valid_kernel
 
-def lineno():
-    """Returns the current line number in our program."""
-    return inspect.currentframe().f_back.f_lineno
-
-class KernelOutput(object):
+class KernelRelease(object):
 
     def __init__(self, src=os.getcwd(), logger=None):
 
@@ -57,9 +52,7 @@ class KernelOutput(object):
         if not is_valid_kernel(src, logger):
             return
 
-        if not os.path.exists(os.path.join(self.src, '.git')):
-            self.logger.warning("Invalid git repo")
-        else:
+        if self.git.valid():
             self.valid_git = True
 
     def generate_output(self, schema, cfg):
@@ -81,8 +74,7 @@ class KernelOutput(object):
     def generate_quilt(self, local_branch=None, head=None, base=None,
                        patch_dir='quilt',
                        sed_file=None,
-                       series_comment='',
-                       upload_quilt=False, remote=None, remote_branch=None):
+                       series_comment=''):
 
         set_val = lambda x, y: y if x is None else x
 
@@ -92,19 +84,18 @@ class KernelOutput(object):
 
         if not self.valid_git:
             self.logger.error("Invalid git repo %s", self.src)
-            return False
+            return None
 
         if sed_file is not None and not os.path.exists(sed_file):
             self.logger.error("sed pattern file %s does not exist", sed_file)
-            return False
+            return None
 
         local_branch = set_val(local_branch, self.git.current_branch())
 
         if local_branch is not None:
-            ret, out, err = self.git.cmd('checkout', local_branch)
-            if ret != 0:
+            if self.git.cmd('checkout', local_branch)[0] != 0:
                 self.logger.error("Git checkout command failed in %s", self.src)
-                return False
+                return None
 
         try:
             patch_dir = os.path.abspath(patch_dir)
@@ -131,7 +122,6 @@ class KernelOutput(object):
                     raise Exception("Git log command failed in %s" % err)
                 head = out.strip()
 
-
             ret, out, err = self.git.cmd('format-patch', '-C', '-M', base.strip() + '..' + head.strip(), '-o', patch_dir)
             if ret != 0:
                 raise Exception("Git format patch command failed in %s" % err)
@@ -153,11 +143,11 @@ class KernelOutput(object):
             if clean_bkup is True:
                     shutil.move(patch_dir_bkup, patch_dir)
             self.logger.error(e)
-            return False
+            return None
         else:
             if clean_bkup is True:
                 shutil.rmtree(patch_dir_bkup)
-            return True
+            return patch_dir
 
 
     def generate_git_bundle(self, mode='branch', local_branch=None, head=None, base=None,
@@ -167,15 +157,15 @@ class KernelOutput(object):
 
         if mode not in self.bundle_modes:
             self.logger.error("Invalid bundle mode %s", mode)
-            return False
+            return None
 
         if not self.valid_git:
             self.logger.error("Invalid git repo %s", self.src)
-            return False
+            return None
 
         if outfile is None:
             self.logger.error("Invalid bundle name %s", outfile)
-            return False
+            return None
 
         local_branch = set_val(local_branch, self.git.current_branch())
 
@@ -185,30 +175,29 @@ class KernelOutput(object):
 
         self.logger.info(format_h1("Generating git bundle", tab=2))
 
-        if local_branch is not None:
-            ret, out, err = self.git.cmd('checkout', local_branch)
-            if ret != 0:
-                self.logger.error("Git checkout command failed in %s", self.src)
-                self.logger.error(err)
-                return False
+        try:
+            if local_branch is not None:
+                ret, out, err = self.git.cmd('checkout', local_branch)
+                if ret != 0:
+                    raise Exception("Git checkout command failed in %s" % self.src)
 
-        if mode == 'branch' and local_branch is not None:
-            ret, out, err = self.git.cmd('bundle', 'create',  outfile, local_branch)
-            if ret != 0:
-                self.logger.error("Git bundle create command failed")
-                return False
-        elif mode == 'diff' and head is not None and base is not None:
-            ret, out, err = self.git.cmd('bundle', 'create', outfile, str(base) + '..' + str(head))
-            if ret != 0:
-                self.logger.error("Git bundle create command failed")
-                return False
-        elif mode == 'commit_count' and local_branch is not None:
-            ret, out, err = self.git.cmd('bundle', 'create', outfile, '-' + str(commit_count), local_branch)
-            if ret != 0:
-                self.logger.error("Git bundle create command failed")
-                return False
-
-        return True
+            if mode == 'branch' and local_branch is not None:
+                ret, out, err = self.git.cmd('bundle', 'create',  outfile, local_branch)
+                if ret != 0:
+                    raise Exception("Git bundle create command failed")
+            elif mode == 'diff' and head is not None and base is not None:
+                ret, out, err = self.git.cmd('bundle', 'create', outfile, str(base) + '..' + str(head))
+                if ret != 0:
+                    raise Exception("Git bundle create command failed")
+            elif mode == 'commit_count' and local_branch is not None:
+                ret, out, err = self.git.cmd('bundle', 'create', outfile, '-' + str(commit_count), local_branch)
+                if ret != 0:
+                    raise Exception("Git bundle create command failed")
+        except Exception as e:
+            self.logger.error(e)
+            return None
+        else:
+            return outfile
 
     def generate_tar_gz(self, local_branch=None, outfile=None):
         self.logger.info(format_h1("Generating tar gz", tab=2))
@@ -219,7 +208,7 @@ class KernelOutput(object):
             ret, out, err = self.git.cmd('checkout', local_branch)
             if ret != 0:
                 self.logger.error("Git checkout command failed in %s", self.src)
-                return False
+                return None
 
         outfile = set_val(outfile, os.path.join(self.src, 'kernel.tar.gz'))
 
@@ -232,13 +221,29 @@ class KernelOutput(object):
         out = tarfile.open(outfile, mode='w:gz')
         out.add(self.src, recursive=True, filter=valid_file)
 
-        return True
+        return outfile
 
-    def generate_timestamp_branch(self, local_branch=None):
-        self.logger.info(format_h1("Generating timestamp branch", tab=2))
+    def upload_branch(self, local_branch=None, remote=None, remote_branch=None, timestamp_suffix=False):
+        if not self.valid_git:
+            self.logger.error("Invalid git repo %s", self.src)
+            return None
 
-    def upload_timestamp_branch(self, local_branch=None, remote=None, remote_branch=None):
         self.logger.info(format_h1("Upload timestamp branch", tab=2))
+
+        ts = datetime.datetime.utcnow().strftime("%m%d%Y%H%M%S")
+
+        if remote_branch is not None and len(remote_branch) > 0 and timestamp_suffix:
+            remote_branch = remote_branch + '-' + ts
+
+        try:
+            ret, out, err = self.git.push(local_branch, remote, remote_branch, force=True)
+            if ret != 0:
+                raise Exception("Git push to %s failed" % (remote))
+        except Exception as e:
+            self.logger.error(e)
+            return False
+        else:
+            return True
 
 def is_valid_dir(parser, arg):
     if not os.path.isdir(arg):
@@ -277,8 +282,6 @@ def add_cli_options(parser):
     quilt_parser.set_defaults(which='quilt')
     quilt_parser.add_argument('-o', '--out', default=None, dest='outfile', help='Quilt output folder path')
     quilt_parser.add_argument('-b', '--branch', default=None, dest='branch', help='Kernel branch name')
-    quilt_parser.add_argument('-r', '--remote', default=None, dest='remote', help='Kernel remote name')
-    quilt_parser.add_argument('--rbranch', default=None, dest='rbranch', help='Kernel remote branch name')
     quilt_parser.add_argument('--head', default=None, dest='head', help='Head commit ID')
     quilt_parser.add_argument('--base', default=None, dest='base', help='Base commit ID')
     quilt_parser.add_argument('--sed-fix', default=None, dest='sed_fix', help='Sed file with regex')
@@ -342,7 +345,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    obj = KernelOutput(src=args.source_dir, logger=logger)
+    obj = KernelRelease(src=args.source_dir, logger=logger)
 
     if obj:
         if args.which == 'bundle':
