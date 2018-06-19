@@ -31,6 +31,8 @@ RESULT_SCHEMA = os.path.join(os.getcwd(), 'config/kernel-test-results-schema.jso
 TEST_SCHEMA = os.path.join(os.getcwd(), 'config/kernel-test-schema.json')
 TEST_CONFIG = os.path.join(os.getcwd(), 'config/kernel-test-sample.json')
 
+CHECK_PATCH_SCRIPT='scripts/checkpatch.pl'
+
 supported_configs = ['allyesconfig', 'allmodconfig', 'allnoconfig', 'defconfig', 'randconfig']
 supported_archs = ['x86_64', 'i386', 'arm64']
 
@@ -190,7 +192,7 @@ class KernelTest(object):
 
         return status
 
-    def compile_test(self, arch='', config_list=[], cc='', cflags=''):
+    def compile_list(self, arch='', config_list=[], cc='', cflags=''):
         self.logger.info(format_h1("Running compile tests", tab=2))
         result = []
 
@@ -217,7 +219,7 @@ class KernelTest(object):
             return -1, err_count, warning_count
 
         if not os.path.exists(os.path.join(self.src, CHECK_PATCH_SCRIPT)):
-            return -1, self.check_patch_results['error_count'], self.check_patch_results['warning_count']
+            return -1, err_count, warning_count
 
         branch = get_val(branch, 'branch')
         base = get_val(base, 'base')
@@ -284,6 +286,9 @@ def add_cli_options(parser):
 
     checkpatch_parser = subparsers.add_parser('checkpatch', help='Run checkpatch test')
     checkpatch_parser.set_defaults(which='use_checkpatch')
+    checkpatch_parser.add_argument('--branch', default=None, dest='branch', help='Kernel branch name')
+    checkpatch_parser.add_argument('--head', default=None, dest='head', help='Head commit ID')
+    checkpatch_parser.add_argument('--base', default=None, dest='base', help='Base commit ID')
 
     aiaiai_parser = subparsers.add_parser('aiaiai', help='Run AiAiAi test')
     aiaiai_parser.set_defaults(which='use_aiaiai')
