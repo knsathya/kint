@@ -21,6 +21,7 @@ import os
 import logging, logging.config
 import argparse
 import copy
+import re
 
 from lib.json_parser import JSONParser
 from lib.build_kernel import BuildKernel, is_valid_kernel
@@ -40,19 +41,25 @@ class KernelResults(object):
     def __init__(self, src=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.src = src
-        self.branch = None
-        self.head = None
-        self.base = None
         self.results = {}
+        self.kernel_params = {}
         self.compile_results = []
         self.checkpatch_results = {}
         self.aiaiai_results = {}
 
         res_obj = {}
 
+        self.kernel_params["head"] = ""
+        self.kernel_params["base"] = ""
+        self.kernel_params["branch"] = ""
+        self.kernel_params["version"] = "Linux"
+
         for arch in supported_archs:
             compile_obj = {}
             compile_obj["arch_name"] = arch
+            compile_obj["version"] = arch
+            compile_obj["head"] = arch
+            compile_obj["base"] = arch
             for config in supported_configs:
                 compile_obj[config] = {}
                 compile_obj[config]["status"] = "N/A"
@@ -69,6 +76,7 @@ class KernelResults(object):
         self.aiaiai_results["warning_count"] = 0
         self.aiaiai_results["error_count"] = 0
 
+        res_obj["kernel-params"] = self.kernel_params
         res_obj["compile-test"] = self.compile_results
         res_obj["checkpatch"] = self.checkpatch_results
         res_obj["aiaiai"] = self.aiaiai_results
@@ -76,37 +84,47 @@ class KernelResults(object):
         self.results = JSONParser(res_obj, RESULT_SCHEMA, extend_defaults=True)
 
     def update_compile_test_results(self, arch, config, status, warning_count=0, error_count=0):
-        for obj in self.compile_results:
+        for obj in self.results["compile-test"]:
             if obj['arch_name'] == arch:
                 obj[config]["status"] = "Passed" if status else "Failed"
                 obj[config]["warning_count"] = warning_count
                 obj[config]["error_count"] = error_count
 
     def update_aiaiai_results(self, status, warning_count=None, error_count=None):
-        self.aiaiai_results["status"] = "Passed" if status else "Failed"
+        self.results["aiaiai"]["status"] = "Passed" if status else "Failed"
         if warning_count is not None:
-            self.aiaiai_results["warning_count"] = warning_count
+            self.results["aiaiai"]["warning_count"] = warning_count
         if error_count is not None:
-            self.aiaiai_results["error_count"] = warning_count
+            self.results["aiaiai"]["error_count"] = warning_count
 
     def update_checkpatch_results(self, status, warning_count=None, error_count=None):
-        self.checkpatch_results["status"] = "Passed" if status else "Failed"
+        self.results["checkpatch"]["status"] = "Passed" if status else "Failed"
         if warning_count is not None:
-            self.checkpatch_results["warning_count"] = warning_count
+            self.results["checkpatch"]["warning_count"] = warning_count
         if error_count is not None:
-            self.checkpatch_results["error_count"] = warning_count
+            self.results["checkpatch"]["error_count"] = warning_count
+
+    def update_kernel_params(self, version=None, branch=None, base=None, head=None):
+        if version is not None:
+            self.results["kernel-params"]["version"] = version
+        if branch is not None:
+            self.results["kernel-params"]["branch"] = branch
+        if base is not None:
+            self.results["kernel-params"]["base"] = base
+        if head is not None:
+            self.results["kernel-params"]["head"] = head
 
     def kernel_info(self):
         out = ''
         if self.src is not None:
             out += 'Kernel Info:\n'
-            out += "\tSource: %s" % self.src
+            out += "\tVersion: %s" % self.results["kernel-params"]["version"]
         if self.branch is not None:
-            out += "\tBranch: %s" % self.branch
+            out += "\tBranch: %s" % self.results["kernel-params"]["branch"]
         if self.head is not None:
-            out += "\tBranch: %s" % self.head
+            out += "\tHead: %s" % self.results["kernel-params"]["head"]
         if self.base is not None:
-            out += "\tBranch: %s" % self.base
+            out += "\tBase: %s" % self.results["kernel-params"]["base"]
 
         return out + '\n'
 
@@ -155,29 +173,89 @@ class KernelResults(object):
 
 class KernelTest(object):
 
-    def __init__(self, src, branch=None, head=None, base=None, logger=None):
+    def __init__(self, src, cfg=None, branch=None, head=None, base=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.src = src
         self.branch = branch
         self.head = head
         self.base = base
         self.valid_git = False
-        self.cfg = None
+        self.cfg = JSONParser(cfg, TEST_SCHEMA, extend_defaults=True).get_cfg()
         self.resobj = KernelResults(self.src, logger)
         self.git = GitShell(wd=self.src, logger=logger)
         self.sh = PyShell(wd=self.src, logger=logger)
+        self.checkpatch_source = CHECK_PATCH_SCRIPT
+        self.aiaiai_source = ""
 
         if not is_valid_kernel(src, logger):
             return
 
+        self.version = BuildKernel(self.src).uname
+
+        if len(self.version) > 0:
+            self.resobj.update_kernel_params(version=self.version)
+
         self.valid_git = True if self.git.valid() else False
 
-        if self.valid_git and self.branch is not None:
-            if self.git.cmd('checkout', branch)[0] != 0:
-                self.logger.error("Git checkout command failed in %s", self.src)
-                return
+        if self.valid_git:
+            if self.branch is not None:
+                if self.git.cmd('checkout', branch)[0] != 0:
+                    self.logger.error("Git checkout command failed in %s", self.src)
+                    return
+            else:
+                self.branch = self.git.current_branch()
 
-    def compile(self, arch='', config='', cc='', cflags=''):
+            #update base & head if its not given
+            if self.head is None:
+                self.head = self.git.head_sha()
+            if self.base is None:
+                self.base = self.git.base_sha()
+
+            self.resobj.update_kernel_params(base=self.base, head=self.head, branch=self.branch)
+
+    def run_test(self):
+        self.logger.info(format_h1("Running kernel tests from json", tab=2))
+
+        status = True
+
+        if self.cfg is None:
+            self.logger.warning("Invalid JSON config file")
+            return False
+
+        compile_config = self.cfg.get("compile-config", None)
+
+        if compile_config is not None and compile_config["enable"] is True:
+
+            for obj in compile_config["test-list"]:
+                def config_enabled(config):
+                    return obj[config]
+
+                for config in filter(config_enabled, supported_configs):
+                    current_status = self.compile(obj["arch_name"], config,
+                                                  obj["compiler_options"]["CC"],
+                                                  obj["compiler_options"]["cflags"])
+                    if current_status is False:
+                        self.logger.error("Compilation of arch:%s config:%s failed\n" % (obj["arch_name"], config))
+
+                    status &= current_status
+
+        checkpatch_config = self.cfg.get("checkpatch-config", None)
+
+        if checkpatch_config is not None and checkpatch_config["enable"] is True:
+            if len(checkpatch_config["source"]) > 0:
+                self.checkpatch_source = checkpatch_config["source"]
+            status &= self.run_checkpatch()[0]
+
+        aiaiai_config = self.cfg.get("aiaiai-config", None)
+
+        if aiaiai_config is not None and aiaiai_config["enable"] is True:
+            if len(aiaiai_config["source"]) > 0:
+                self.aiaiai_source = aiaiai_config["source"]
+            status &= self.run_aiaiai()
+
+        return status
+
+    def compile(self, arch='', config='', cc='', cflags=[]):
         if arch not in supported_archs or config not in supported_configs:
             self.logger.error("Invalid arch/config %s/%s" % (arch, config))
             return False
@@ -192,7 +270,7 @@ class KernelTest(object):
 
         return status
 
-    def compile_list(self, arch='', config_list=[], cc='', cflags=''):
+    def compile_list(self, arch='', config_list=[], cc='', cflags=[]):
         self.logger.info(format_h1("Running compile tests", tab=2))
         result = []
 
@@ -201,10 +279,12 @@ class KernelTest(object):
 
         return result
 
-    def run_aiaiai(self, branch=None):
+    def run_aiaiai(self):
         self.logger.info(format_h1("Run AiAiAi Script", tab=2))
 
-    def run_checkpatch(self, branch=None, base=None, head=None):
+        return True
+
+    def run_checkpatch(self):
 
         self.logger.info(format_h1("Runing checkpatch script", tab=2))
 
@@ -215,49 +295,44 @@ class KernelTest(object):
         err_count = 0
         warning_count = 0
 
-        if self.valid_git is False:
-            return -1, err_count, warning_count
+        try:
+            if self.valid_git is False:
+                raise Exception("Invalid git repo")
 
-        if not os.path.exists(os.path.join(self.src, CHECK_PATCH_SCRIPT)):
-            return -1, err_count, warning_count
+            if not os.path.exists(os.path.join(self.src, CHECK_PATCH_SCRIPT)):
+                raise Exception("Invalid checkpatch script")
 
-        branch = get_val(branch, 'branch')
-        base = get_val(base, 'base')
-        head = get_val(head, 'head')
-
-        if branch is not None:
-            ret, out, err = self.git.cmd('checkout', branch)
+            ret, count, err = self.git.cmd('rev-list', '--count',  str(self.base) + '..'+ str(self.head))
             if ret != 0:
-                return -1, self.check_patch_results['error_count'], self.check_patch_results['warning_count']
+                raise Exception("git rev-list command failed")
 
-        ret, count, err = self.git.cmd('rev-list', '--count',  str(base) + '..'+ str(head))
-        if ret != 0:
-            return -1, self.check_patch_results['error_count'], self.check_patch_results['warning_count']
+            self.logger.debug("Number of patches between %s..%s is %d", self.base, self.head, int(count))
 
-        self.logger.debug("Number of patches between %s..%s is %d", base, head, int(count))
+            def parse_results(data):
+                regex = r"total: ([0-9]*) errors, ([0-9]*) warnings,"
+                match = re.search(regex, data)
+                if match:
+                    return int(match.group(1)), int(match.group(2))
 
-        def parse_results(data):
-            regex = r"total: ([0-9]*) errors, ([0-9]*) warnings,"
-            match = re.search(regex, data)
-            if match:
-                return int(match.group(1)), int(match.group(2))
+                return 0, 0
 
-            return 0, 0
-
-        prev_index = 0
-        for index in range(1, int(count) + 1):
-            commit_range = str(head) + '~' + str(index) + '..' + str(head) + '~' + str(prev_index)
-            ret, out, err = self.sh.cmd(os.path.join(self.src, CHECK_PATCH_SCRIPT), '-g', commit_range)
-            error, warning = parse_results(out)
-            if error != 0 or warning != 0:
-                self.logger.info(out)
-                self.logger.info(err)
-            self.check_patch_results['error_count'] += error
-            self.check_patch_results['warning_count'] += warning
-            prev_index = index
-
-        return 0, self.check_patch_results['error_count'], self.check_patch_results['warning_count']
-
+            prev_index = 0
+            for index in range(1, int(count) + 1):
+                commit_range = str(self.head) + '~' + str(index) + '..' + str(self.head) + '~' + str(prev_index)
+                ret, out, err = self.sh.cmd(os.path.join(self.src, CHECK_PATCH_SCRIPT), '-g', commit_range)
+                error, warning = parse_results(out)
+                if error != 0 or warning != 0:
+                    self.logger.debug(out)
+                    self.logger.debug(err)
+                err_count += error
+                warning_count += warning
+                prev_index = index
+        except Exception as e:
+            self.logger.error(e)
+            return False, err_count, warning_count
+        else:
+            self.resobj.update_checkpatch_results(True, err_count, warning_count)
+            return True, err_count, warning_count
 
 def is_valid_dir(parser, arg):
     if not os.path.isdir(arg):
@@ -283,12 +358,13 @@ def add_cli_options(parser):
                         choices=supported_configs,
                         dest='config_list',
                         help='list of configs to be tested')
+    compile_parser.add_argument('--cflags', default=[], nargs='*',
+                        dest='cflags',
+                        help='cflags')
+    compile_parser.add_argument('--cc', default='', dest='cc', help='Cross Compile')
 
     checkpatch_parser = subparsers.add_parser('checkpatch', help='Run checkpatch test')
     checkpatch_parser.set_defaults(which='use_checkpatch')
-    checkpatch_parser.add_argument('--branch', default=None, dest='branch', help='Kernel branch name')
-    checkpatch_parser.add_argument('--head', default=None, dest='head', help='Head commit ID')
-    checkpatch_parser.add_argument('--base', default=None, dest='base', help='Base commit ID')
 
     aiaiai_parser = subparsers.add_parser('aiaiai', help='Run AiAiAi test')
     aiaiai_parser.set_defaults(which='use_aiaiai')
@@ -304,6 +380,9 @@ def add_cli_options(parser):
                         type=lambda x: is_valid_dir(parser, x),
                         default=os.getcwd(),
                         help='Kerenl source directory')
+    parser.add_argument('--branch', default=None, dest='branch', help='Kernel branch name')
+    parser.add_argument('--head', default=None, dest='head', help='Head commit ID')
+    parser.add_argument('--base', default=None, dest='base', help='Base commit ID')
     parser.add_argument('-l', '--log', action='store', dest='log_file',
                         nargs='?',
                         const=os.path.join(os.getcwd(), 'ktest.log'),

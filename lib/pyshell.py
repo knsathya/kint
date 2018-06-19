@@ -140,6 +140,20 @@ class GitShell(PyShell):
         cmd_str = GIT_COMMAND_PATH + " branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
         return super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)[1].strip()
 
+    def base_sha(self, **kwargs):
+        ret, out, err = self.cmd('log', '--oneline', '|', 'tail', '-1', '|', 'cut', "-d' '", '-f1', **kwargs)
+        if ret != 0:
+            return None
+
+        return out.strip()
+
+    def head_sha(self, **kwargs):
+        ret, out, err = self.cmd('log', '--oneline', '|', 'tail', '-1', '|', 'cut', "-d' '", '-f1', **kwargs)
+        if ret != 0:
+            return None
+
+        return out.strip()
+
 if __name__ == '__main__':
 
     logger = logging.getLogger(__name__)

@@ -192,6 +192,8 @@ class BuildKernel(object):
             self.logger.error("%s Invalid kernel source directory", self.src)
             raise IOError
 
+        self.uname = PyShell(logger=logger).cmd("make", "kernelversion")[1].strip()
+
         def parse_makefile(field):
             regex = r"%s = (.*)" % field
             match = re.search(regex, self._makefile)
@@ -204,8 +206,9 @@ class BuildKernel(object):
         self.extra_version = set_val(parse_makefile("EXTRAVERSION"), "")
         self.version_name = set_val(parse_makefile("NAME"), "")
 
-        self.uname = " ".join(["Linux", ''.join(['.'.join([self.version, self.level,
-                                                           self.sublevel]), self.extra_version])])
+        if len(self.uname) == 0:
+            self.uname = " ".join(["Linux", ''.join(['.'.join([self.version, self.level,
+                                                               self.sublevel]), self.extra_version])])
 
         self.config_targets = ["config", "nconfig", "menuconfig", "xconfig", "gconfig", "oldconfig",
                                "localmodconfig", "localyesconfig", "defconfig", "savedefconfig",
@@ -215,7 +218,9 @@ class BuildKernel(object):
 
         self.clean_targets = ["clean", "mrproper", "distclean"]
 
-        for target in self.config_targets +  self.clean_targets:
+        self.misc_targets = ["kernelversion"]
+
+        for target in self.config_targets +  self.clean_targets + self.misc_targets:
             def make_variant(self, target=target, flags=[], log=False, dryrun=False):
                 self._make_target(target=target, flags=flags, log=log, dryrun=dryrun)
             setattr(self.__class__, 'make_' + target , make_variant)

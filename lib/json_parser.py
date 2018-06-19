@@ -202,6 +202,8 @@ class JSONParser(object):
          After processing the input, json file will be flatten need by using "separator".
         """
         self.logger = logger or logging.getLogger(__name__)
+        self.data = None
+        self.schema = None
 
         data, status = self._get_json_data(schema, parse_include, base_dir, os_env, opt_env)
         if status is False:
