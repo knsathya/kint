@@ -1,39 +1,39 @@
 {
     "compile-config": {
-        "enable": false,
+        "enable": true,
         "test-list": [
             {
                 "arch_name": "x86_64",
-                "allyesconfig": true,
-                "allmodconfig": true,
-                "allnoconfig": true,
+                "allyesconfig": false,
+                "allmodconfig": false,
+                "allnoconfig": false,
                 "defconfig": true
             },
             {
                 "arch_name": "i386",
-                "allyesconfig": true,
-                "allmodconfig": true,
-                "allnoconfig": true,
-                "defconfig": true
+                "allyesconfig": false,
+                "allmodconfig": false,
+                "allnoconfig": false,
+                "defconfig": false
             },
             {
                 "arch_name": "arm64",
                 "compiler_options": {
                     "CC": "aarch64-linux-gnu-"
                 },
-                "allyesconfig": true,
-                "allmodconfig": true,
-                "allnoconfig": true,
-                "defconfig": true
+                "allyesconfig": false,
+                "allmodconfig": false,
+                "allnoconfig": false,
+                "defconfig": false
             }
         ]
     },
     "checkpatch-config": {
-        "enable": false,
+        "enable": true,
         "source": "scripts/checkpatch.pl"
     },
     "aiaiai-config": {
-        "enable": false,
+        "enable": true,
         "source": ""
     }
 }

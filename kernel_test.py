@@ -20,7 +20,6 @@
 import os
 import logging, logging.config
 import argparse
-import copy
 import re
 
 from lib.json_parser import JSONParser
@@ -81,7 +80,9 @@ class KernelResults(object):
         res_obj["checkpatch"] = self.checkpatch_results
         res_obj["aiaiai"] = self.aiaiai_results
 
-        self.results = JSONParser(res_obj, RESULT_SCHEMA, extend_defaults=True)
+        self.results = JSONParser(RESULT_SCHEMA, res_obj, extend_defaults=True).get_cfg()
+
+        #self.logger.info(self.results)
 
     def update_compile_test_results(self, arch, config, status, warning_count=0, error_count=0):
         for obj in self.results["compile-test"]:
@@ -118,13 +119,10 @@ class KernelResults(object):
         out = ''
         if self.src is not None:
             out += 'Kernel Info:\n'
-            out += "\tVersion: %s" % self.results["kernel-params"]["version"]
-        if self.branch is not None:
-            out += "\tBranch: %s" % self.results["kernel-params"]["branch"]
-        if self.head is not None:
-            out += "\tHead: %s" % self.results["kernel-params"]["head"]
-        if self.base is not None:
-            out += "\tBase: %s" % self.results["kernel-params"]["base"]
+            out += "\tVersion: %s\n" % self.results["kernel-params"]["version"]
+            out += "\tBranch: %s\n" % self.results["kernel-params"]["branch"]
+            out += "\tHead: %s\n" % self.results["kernel-params"]["head"]
+            out += "\tBase: %s\n" % self.results["kernel-params"]["base"]
 
         return out + '\n'
 
@@ -135,7 +133,9 @@ class KernelResults(object):
             out += '\t%s results:\n' % obj['arch_name']
             for config in supported_configs:
                 out += '\t\t%s results:\n' % config
-                out += ('\t\t\t%-' + str(width) + 's: %s\n') % (config, obj[config])
+                out += ('\t\t\t%-' + str(width) + 's: %s\n') % ("status", obj[config]["status"])
+                out += ('\t\t\t%-' + str(width) + 's: %s\n') % ("warning", obj[config]["warning_count"])
+                out += ('\t\t\t%-' + str(width) + 's: %s\n') % ("error", obj[config]["error_count"])
 
         return out + '\n'
 
@@ -155,7 +155,7 @@ class KernelResults(object):
 
         return out + '\n'
 
-    def print_test_results(self, test_type="compile"):
+    def get_test_results(self, test_type="compile"):
         out = ''
         out += self.kernel_info()
         if test_type == "compile":
@@ -169,19 +169,25 @@ class KernelResults(object):
             out += self.checkpatch_test_results()
             out += self.aiaiai_test_results()
 
-        self.logger.info(out)
+        return out
+
+    def print_test_results(self, test_type="compile"):
+        self.logger.info(self.get_test_results(test_type))
+
+
 
 class KernelTest(object):
 
-    def __init__(self, src, cfg=None, branch=None, head=None, base=None, logger=None):
+    def __init__(self, src, out=None, branch=None, head=None, base=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.src = src
+        self.out = os.path.join(self.src, 'out') if out is None else os.path.absapth(out)
         self.branch = branch
         self.head = head
         self.base = base
         self.valid_git = False
-        self.cfg = JSONParser(cfg, TEST_SCHEMA, extend_defaults=True).get_cfg()
-        self.resobj = KernelResults(self.src, logger)
+        self.cfg = None
+        self.resobj = KernelResults(self.src, self.logger)
         self.git = GitShell(wd=self.src, logger=logger)
         self.sh = PyShell(wd=self.src, logger=logger)
         self.checkpatch_source = CHECK_PATCH_SCRIPT
@@ -213,16 +219,22 @@ class KernelTest(object):
 
             self.resobj.update_kernel_params(base=self.base, head=self.head, branch=self.branch)
 
-    def run_test(self):
+    def run_test(self, cfg):
         self.logger.info(format_h1("Running kernel tests from json", tab=2))
 
         status = True
+
+        self.cfg = JSONParser(TEST_SCHEMA, cfg, extend_defaults=True).get_cfg() if cfg is not None else None
 
         if self.cfg is None:
             self.logger.warning("Invalid JSON config file")
             return False
 
+        self.logger.info(self.cfg.keys())
+
         compile_config = self.cfg.get("compile-config", None)
+
+        self.logger.info(compile_config)
 
         if compile_config is not None and compile_config["enable"] is True:
 
@@ -241,12 +253,16 @@ class KernelTest(object):
 
         checkpatch_config = self.cfg.get("checkpatch-config", None)
 
+        self.logger.info(checkpatch_config)
+
         if checkpatch_config is not None and checkpatch_config["enable"] is True:
             if len(checkpatch_config["source"]) > 0:
                 self.checkpatch_source = checkpatch_config["source"]
             status &= self.run_checkpatch()[0]
 
         aiaiai_config = self.cfg.get("aiaiai-config", None)
+
+        self.logger.info(aiaiai_config)
 
         if aiaiai_config is not None and aiaiai_config["enable"] is True:
             if len(aiaiai_config["source"]) > 0:
@@ -334,6 +350,12 @@ class KernelTest(object):
             self.resobj.update_checkpatch_results(True, err_count, warning_count)
             return True, err_count, warning_count
 
+    def print_results(self, test_type='all'):
+        self.resobj.print_test_results(test_type=test_type)
+
+    def get_results(self, test_type='all'):
+        return self.resobj.get_test_results(test_type=test_type)
+
 def is_valid_dir(parser, arg):
     if not os.path.isdir(arg):
         yes = {'yes', 'y', 'ye', ''}
@@ -353,11 +375,10 @@ def add_cli_options(parser):
     subparsers = parser.add_subparsers(help='Commands')
     compile_parser = subparsers.add_parser('compile', help='Run compile test')
     compile_parser.set_defaults(which='use_compile')
-    compile_parser.add_argument('arch', choices=supported_archs, dest='arch', help='Arch to be tested')
+    compile_parser.add_argument('arch', choices=supported_archs, help='Arch to be tested')
     compile_parser.add_argument('--configs', default=[], nargs='*',
-                        choices=supported_configs,
                         dest='config_list',
-                        help='list of configs to be tested')
+                        help='Choose configs in %s' % supported_configs)
     compile_parser.add_argument('--cflags', default=[], nargs='*',
                         dest='cflags',
                         help='cflags')
@@ -370,11 +391,8 @@ def add_cli_options(parser):
     aiaiai_parser.set_defaults(which='use_aiaiai')
 
     json_parser = subparsers.add_parser('use_json', help='Run json test')
-    json_parser.add_argument('-c', action='store', dest='config',
-                             default=TEST_CONFIG,
-                             help='Kernel test config json file')
-
-    aiaiai_parser.set_defaults(which='use_json')
+    json_parser.set_defaults(which='use_json')
+    json_parser.add_argument('config', action='store', default=TEST_CONFIG, help='Kernel test config json file')
 
     parser.add_argument('-i', '--kernel-dir', action='store', dest='source_dir',
                         type=lambda x: is_valid_dir(parser, x),
@@ -414,17 +432,20 @@ if __name__ == "__main__":
 
     obj= None
 
-    if args.use_json is True:
-        obj =  KernelTest(logger=logger)
-        obj.json_config(args.config_schema, args.config_data)
+    obj = KernelTest(src=args.source_dir, base=args.base, head=args.head, branch=args.branch, logger=logger)
+
+    if obj:
+        if args.which == 'use_compile':
+            obj.compile_list(args.arch, args.config_list, args.cc, args.cflags)
+        if args.which == 'use_checkpatch':
+            obj.run_checkpatch()
+        if args.which == 'use_aiaiai':
+            obj.run_aiaiai()
+        if args.which == 'use_json':
+            obj.run_test(cfg=os.path.abspath(args.config))
+        obj.print_results()
+
     else:
-        obj =  KernelTest(src=args.source_dir, test_archs=args.arch_list, config_list=args.config_list, logger=logger)
-
-        obj.run()
-
-        if args.debug:
-            obj.print_test_cfg()
-
-        obj.print_test_results()
+        logger.error("Invalid kernel output obj")
 
 

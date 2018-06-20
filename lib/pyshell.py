@@ -27,8 +27,8 @@ class PyShell(object):
         error = list()
         wd = wd if wd is not None else self.wd
 
-        self.logger.info(args)
-        self.logger.info('wd=%s, out_log=%s, dry_run=%s, shell=%s' % (wd, out_log, dry_run, shell))
+        #self.logger.info(args)
+        #self.logger.info('wd=%s, out_log=%s, dry_run=%s, shell=%s' % (wd, out_log, dry_run, shell))
         self.logger.debug("Executing " + ' '.join(list(args)))
 
         if len(args) < 0:
