@@ -123,10 +123,14 @@ class GitShell(PyShell):
         if not self.valid(**kwargs):
             self.cmd('init', '.', **kwargs)
 
+        return True, '', ''
+
     def add_remote(self, name, url, override=False, **kwargs):
         if override is True:
             self.cmd('remote', 'remove', name, **kwargs)
         self.cmd('remote', 'add', name, url, **kwargs)
+
+        return True, '', ''
 
     def push(self, lbranch, remote, rbranch, force=False, use_refs=False, **kwargs):
         if use_refs is True:
@@ -141,14 +145,16 @@ class GitShell(PyShell):
         return super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)[1].strip()
 
     def base_sha(self, **kwargs):
-        ret, out, err = self.cmd('log', '--oneline', '|', 'tail', '-1', '|', 'cut', "-d' '", '-f1', **kwargs)
+        cmd_str = GIT_COMMAND_PATH + " log --oneline | tail -1 | cut -d' ' -f1"
+        ret, out, err = super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)
         if ret != 0:
             return None
 
         return out.strip()
 
     def head_sha(self, **kwargs):
-        ret, out, err = self.cmd('log', '--oneline', '|', 'tail', '-1', '|', 'cut', "-d' '", '-f1', **kwargs)
+        cmd_str = GIT_COMMAND_PATH + " log --oneline | head -1 | cut -d' ' -f1"
+        ret, out, err = super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)
         if ret != 0:
             return None
 

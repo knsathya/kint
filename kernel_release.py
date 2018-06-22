@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Production kernel release script
+# Linux Kernel release script
 #
 # Copyright (C) 2018 Sathya Kuppuswamy
 #
@@ -21,8 +21,9 @@ import logging, logging.config
 import argparse
 import datetime
 import tarfile
-import inspect
+import tempfile
 import shutil
+import glob
 
 from lib.json_parser import JSONParser
 from lib.decorators import format_h1
@@ -34,7 +35,7 @@ class KernelRelease(object):
     def __init__(self, src=os.getcwd(), logger=None):
 
         self.logger = logger or logging.getLogger(__name__)
-        self.src = src
+        self.src = os.path.abspath(src)
         self.base = None
         self.head = None
         self.local_branch = None
@@ -71,7 +72,7 @@ class KernelRelease(object):
 
         return True
 
-    def generate_quilt(self, local_branch=None, head=None, base=None,
+    def generate_quilt(self, local_branch=None, base=None, head=None,
                        patch_dir='quilt',
                        sed_file=None,
                        series_comment=''):
@@ -94,7 +95,7 @@ class KernelRelease(object):
 
         if local_branch is not None:
             if self.git.cmd('checkout', local_branch)[0] != 0:
-                self.logger.error("Git checkout command failed in %s", self.src)
+                self.logger.error("git checkout command failed in %s", self.src)
                 return None
 
         try:
@@ -110,24 +111,23 @@ class KernelRelease(object):
 
             # if base SHA is not given use TAIL as base SHA
             if base is None:
-                ret, out, err = self.git.cmd('log', '--oneline', '|', 'tail', '-1', '|', 'cut', "-d' '", '-f1')
-                if ret != 0:
-                    raise Exception("Git log command failed in %s" % err)
-                base = out.strip()
+                base = self.git.base_sha()
+                if base is None:
+                    raise Exception("git log command failed")
 
             # if head SHA is not given use HEAD as head SHA
             if head is None:
-                ret, out, err = self.git.cmd('log', '--oneline', '|', 'head', '-1', '|', 'cut', "-d' '", '-f1')
-                if ret != 0:
-                    raise Exception("Git log command failed in %s" % err)
-                head = out.strip()
+                head = self.git.head_sha()
+                if head is None:
+                    raise Exception("git fetch head SHA failed")
 
-            ret, out, err = self.git.cmd('format-patch', '-C', '-M', base.strip() + '..' + head.strip(), '-o', patch_dir)
+            ret, out, err = self.git.cmd('format-patch', '-C', '-M', base.strip() + '..' + head.strip(), '-o',
+                                         patch_dir)
             if ret != 0:
-                raise Exception("Git format patch command failed in %s" % err)
+                raise Exception("git format patch command failed out: %s error: %s" % (out, err))
 
             if sed_file is not None:
-                ret, out, err = self.sh.cmd('sed', '-i', '-f%s' % sed_file, '%s/*.patch' % patch_dir)
+                ret, out, err = self.sh.cmd('sed -i -f%s %s/*.patch' % (sed_file, patch_dir), shell=True)
                 if ret != 0:
                     raise Exception("sed command failed %s" % err)
 
@@ -148,6 +148,92 @@ class KernelRelease(object):
             if clean_bkup is True:
                 shutil.rmtree(patch_dir_bkup)
             return patch_dir
+
+    def upload_quilt(self, patch_dir, commit_msg, remote, rbranch,
+                     use_refs=False, force_update= False, clean_update=False,
+                     timestamp_suffix=False, timestamp_format="%m%d%Y%H%M%S",
+                     tag_name=None, tag_msg=None):
+
+        self.logger.info(format_h1("Upload quilt series", tab=2))
+
+        # Create a temp dir and pull the remote repo
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            # Make sure arguments are valid
+            for arg in [patch_dir, commit_msg, remote, rbranch]:
+                if len(arg) == 0:
+                    Exception("Invalid arg %s" % arg)
+
+            # Fetch the latest changes
+            git = GitShell(wd=temp_dir, logger=self.logger)
+            if not git.valid():
+                git.init()
+
+            git.add_remote(url=remote, name='origin', override=True)
+
+            ret = git.cmd('fetch', 'origin')[0]
+            if ret != 0:
+                Exception("git remote update failed")
+
+            ret = git.cmd('checkout', 'origin/'+ rbranch)[0]
+            if ret != 0:
+                Exception("git checkout %s:%s failed" % (remote, rbranch))
+
+            if timestamp_suffix and len(rbranch) > 0:
+                self.logger.info(format_h1("Upload timestamp branch", tab=2))
+                ts = datetime.datetime.utcnow().strftime(timestamp_format)
+                rbranch = rbranch + '-' + ts
+
+            # If clean update is True, then remove all contents of the repo.
+            if clean_update is True:
+                ret = git.cmd('rm', '-r', '.')[0]
+                if ret != 0:
+                    Exception("git rm -r command failed")
+
+            # Copy the file list from patch_dir to tempdir
+            file_list = []
+            file_list += glob.glob(os.path.join(os.path.abspath(patch_dir), '*.patch'))
+            file_list += glob.glob(os.path.join(os.path.abspath(patch_dir), 'series'))
+
+            for item in file_list:
+                ret = self.sh.cmd('cp', '-f', item, os.path.join(os.path.abspath(temp_dir),
+                                                                os.path.basename(item)))[0]
+                if ret != 0:
+                    Exception("copying %s failed", (item))
+
+                ret = git.cmd('add', os.path.basename(item))
+                if ret != 0:
+                    Exception("git add %s failed", (os.path.basename(item)))
+
+            ret =  git.cmd('commit', '-s', '-m', commit_msg)[0]
+            if ret != 0:
+                Exception("git commit failed")
+
+            ret =  git.push('HEAD', remote, rbranch, force=force_update, use_refs=use_refs)[0]
+            if ret != 0:
+                Exception("git push to %s %s failed" % (remote, rbranch))
+
+            # Push the tags if required
+            if tag_name is not None:
+                if tag_msg is not None:
+                    ret = git.cmd('tag', tag_name, '-a', tag_msg)[0]
+                else:
+                    ret = git.cmd('tag', tag_name)[0]
+                if ret != 0:
+                    Exception("git tag %s failed" % (tag_name))
+
+                ret = git.cmd('push', 'origin', tag_name)[0]
+                if ret != 0:
+                    Exception("git push tag to %s failed" % (remote))
+
+        except Exception as e:
+            self.logger.error(e)
+            shutil.rmtree(temp_dir)
+            return False
+        else:
+            shutil.rmtree(temp_dir)
+            return True
 
 
     def generate_git_bundle(self, mode='branch', local_branch=None, head=None, base=None,
@@ -223,14 +309,15 @@ class KernelRelease(object):
 
         return outfile
 
-    def upload_branch(self, local_branch=None, remote=None, remote_branch=None, timestamp_suffix=False):
+    def upload_branch(self, local_branch=None, remote=None, remote_branch=None,
+                      timestamp_suffix=False, timestamp_format="%m%d%Y%H%M%S",):
         if not self.valid_git:
             self.logger.error("Invalid git repo %s", self.src)
             return None
 
         self.logger.info(format_h1("Upload timestamp branch", tab=2))
 
-        ts = datetime.datetime.utcnow().strftime("%m%d%Y%H%M%S")
+        ts = datetime.datetime.utcnow().strftime(timestamp_format)
 
         if remote_branch is not None and len(remote_branch) > 0 and timestamp_suffix:
             remote_branch = remote_branch + '-' + ts
@@ -280,6 +367,8 @@ def add_cli_options(parser):
 
     quilt_parser = subparsers.add_parser('quilt', help='Create quilt patchset')
     quilt_parser.set_defaults(which='quilt')
+
+    quilt_parser.add_argument('-u', action='store_true', dest='upload', help='Upload the quilt series')
     quilt_parser.add_argument('-o', '--out', default=None, dest='outfile', help='Quilt output folder path')
     quilt_parser.add_argument('-b', '--branch', default=None, dest='branch', help='Kernel branch name')
     quilt_parser.add_argument('--head', default=None, dest='head', help='Head commit ID')
@@ -352,7 +441,7 @@ if __name__ == "__main__":
             obj.generate_git_bundle(args.mode, args.branch, args.head, args.base,
                                     args.commit_count, args.outfile)
         if args.which == 'quilt':
-            obj.generate_quilt(args.branch, args.head, args.base, args.outfile, args.sed_fix, '',
+            obj.generate_quilt(args.branch, args.base, args.head, args.outfile, args.sed_fix, '',
                                False, args.remote, args.rbranch)
         if args.which == 'tar':
             obj.generate_tar_gz(args.branch, args.outfile)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Production kernel test script
+# Linux Kernel test script
 #
 # Copyright (C) 2018 Sathya Kuppuswamy
 #
@@ -27,9 +27,9 @@ from lib.build_kernel import BuildKernel, is_valid_kernel
 from lib.decorators import format_h1
 from lib.pyshell import PyShell, GitShell
 
-RESULT_SCHEMA = os.path.join(os.getcwd(), 'config/kernel-test-results-schema.json')
-TEST_SCHEMA = os.path.join(os.getcwd(), 'config/kernel-test-schema.json')
-TEST_CONFIG = os.path.join(os.getcwd(), 'config/kernel-test-sample.json')
+RESULT_SCHEMA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config/kernel-test-results-schema.json')
+TEST_SCHEMA = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config/kernel-test-schema.json')
+TEST_CONFIG = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config/kernel-test-sample.json')
 
 CHECK_PATCH_SCRIPT='scripts/checkpatch.pl'
 

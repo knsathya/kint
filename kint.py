@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Production kernel intergration script
+# Linux Kernel intergration script
 #
 # Copyright (C) 2018 Sathya Kuppuswamy
 #
