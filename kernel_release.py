@@ -72,10 +72,153 @@ class KernelRelease(object):
 
         return True
 
+    def get_upload_params(self):
+        default_params = {
+            "remote": (),
+            "remotebranch": "master",
+            "new_commit": False,
+            "file_format": ["*"],
+            "remotedir": '.',
+            "destdir": None,
+            "commit_msg": "first commit",
+            "clean_update": False,
+            "use_refs": False,
+            "force_update": False,
+            "timestamp_suffix": False,
+            "timestamp_format": "%m%d%Y%H%M%S",
+            "tag_list": []
+        }
+
+        return default_params
+
+    def upload_release(self, src, remote_cfg=None):
+        '''
+
+        :param src: Source dir. Either kernel, quilt or tar file.
+        :param format: List of glob regex format of file to copied.
+        :param remote_cfg: List of following dict
+        "remote"               : (Remote Name, Remote URL)
+        "remotebranch"         : Remote Branch
+        "new_commit"           : Create new commit and then upload (True|False).
+            "file_format"      : List of glob format of the files to be added to the commit.
+            "remotedir"        : Relative dir (in remote)
+            "commit_msg"       : Commit Message ()
+            "clean_update"     : Remove existing changes before adding new changes (True | False).
+            "destdir"          : destination directory for creating and uploading the new changes.
+        "use_refs"             : Use refs/for when pushing (True | False).
+        "force_update"         : Force update when pushing (True | False).
+        "clean_update"         : Clean git remote before pushing your change (True | False).
+        "timestamp_suffix"     : Add time stamp suffix to remotebranch before pushing.
+                                 It will create a new branch (Trie | False).
+        "timestamp_format"    : "%m%d%Y%H%M%S"
+        "tag_list"            : [("name", "msg")], empty list if no tagging support needed. Use None for no message.
+        :return:
+        '''
+
+        if remote_cfg is None:
+            return False
+
+        src = os.path.abspath(src)
+        dest_dir = src
+        used_temp = False
+
+        try:
+            for cfg in remote_cfg:
+
+                dest_dir = src
+                used_temp = False
+
+                if len(cfg["remote"]) > 0 and cfg["remote"] is not None and cfg["remote"][1] is not None:
+                    remote_list = [cfg["remote"]]
+                else:
+                    Exception("Incorrect remote name %s or url %s" % cfg["remote"])
+
+                rbranch = cfg["remotebranch"]
+
+                if cfg["timestamp_suffix"] and len(rbranch) > 0:
+                    self.logger.info(format_h1("Upload timestamp branch", tab=2))
+                    ts = datetime.datetime.utcnow().strftime(cfg["timestamp_format"])
+                    rbranch = rbranch + '-' + ts
+
+                if cfg["new_commit"] is True:
+                    file_list = []
+
+                    if cfg["destdir"] is not None:
+                        if not os.path.exists(cfg["destdir"]):
+                            Exception("Destination dir %s does not exist", cfg["destdir"])
+                        else:
+                            dest_dir = os.path.abspath(cfg["destdir"])
+                    else:
+                        used_temp = True
+                        dest_dir = tempfile.mkdtemp()
+
+                    git = GitShell(wd=dest_dir, init=True, remote_list=remote_list, fetch_all=True, logger=self.logger)
+
+                    git.cmd("checkout", cfg["remote"][0] + '/' + cfg["remotebranch"])
+
+                    if os.path.isdir(src):
+                        for format in cfg["file_format"]:
+                            file_list += glob.glob(os.path.join(os.path.abspath(src), format))
+                    else:
+                            file_list = [src]
+
+                    # If clean update is True, then remove all contents of the repo.
+                    if cfg["clean_update"] is True:
+                        ret = git.cmd('rm', cfg["remotedir"] + '/*' if cfg["remotedir"] != '.' else '*')[0]
+                        if ret != 0:
+                            Exception("git rm -r *.patch failed")
+
+                    if cfg["remotedir"] != '.' and not os.path.exists(os.path.join(dest_dir, cfg["remotedir"])):
+                        os.makedirs(os.path.join(dest_dir, cfg["remotedir"]))
+
+                    for item in file_list:
+                        dest_path = os.path.join(os.path.abspath(dest_dir), cfg["remotedir"], os.path.basename(item))
+
+                        from shutil import copyfile
+
+                        copyfile(item, dest_path)
+
+                        ret = git.cmd('add', cfg["remotedir"] + '/' + os.path.basename(item))
+                        if ret != 0:
+                            Exception("git add %s failed", cfg["remotedir"] + '/' + os.path.basename(item))
+
+                    ret = git.cmd('commit -s -m "' + cfg["commit_msg"] + '"')[0]
+                    if ret != 0:
+                        Exception("git commit failed")
+
+                git = GitShell(wd=dest_dir, init=True, remote_list=remote_list, fetch_all=True, logger=self.logger)
+
+                ret = git.push('HEAD', cfg["remote"][0], rbranch, force=cfg["force_update"],
+                               use_refs=cfg["use_refs"])[0]
+                if ret != 0:
+                        Exception("git push to %s %s failed" % (cfg["remote"][0], rbranch))
+
+                for tag in cfg["tag_list"]:
+                    # Push the tags if required
+                    if tag[0] is not None:
+                        if tag[1] is not None:
+                            ret = git.cmd('tag', '-a', tag[0], '-m', tag[1])[0]
+                        else:
+                            ret = git.cmd('tag', tag[0])[0]
+                        if ret != 0:
+                            Exception("git tag %s failed" % (tag[0]))
+
+                        ret = git.cmd('push', cfg["remote"][0], tag[0])[0]
+                        if ret != 0:
+                            Exception("git push tag to %s failed" % (cfg["remote"][0]))
+        except Exception as e:
+            self.logger.error(e)
+            if used_temp is True:
+                shutil.rmtree(dest_dir)
+            return False
+        else:
+            return True
+
     def generate_quilt(self, local_branch=None, base=None, head=None,
                        patch_dir='quilt',
                        sed_file=None,
                        series_comment=''):
+
 
         set_val = lambda x, y: y if x is None else x
 
@@ -148,92 +291,6 @@ class KernelRelease(object):
             if clean_bkup is True:
                 shutil.rmtree(patch_dir_bkup)
             return patch_dir
-
-    def upload_quilt(self, patch_dir, commit_msg, remote, rbranch,
-                     use_refs=False, force_update= False, clean_update=False,
-                     timestamp_suffix=False, timestamp_format="%m%d%Y%H%M%S",
-                     tag_name=None, tag_msg=None):
-
-        self.logger.info(format_h1("Upload quilt series", tab=2))
-
-        # Create a temp dir and pull the remote repo
-        temp_dir = tempfile.mkdtemp()
-
-        try:
-            # Make sure arguments are valid
-            for arg in [patch_dir, commit_msg, remote, rbranch]:
-                if len(arg) == 0:
-                    Exception("Invalid arg %s" % arg)
-
-            # Fetch the latest changes
-            git = GitShell(wd=temp_dir, logger=self.logger)
-            if not git.valid():
-                git.init()
-
-            git.add_remote(url=remote, name='origin', override=True)
-
-            ret = git.cmd('fetch', 'origin')[0]
-            if ret != 0:
-                Exception("git remote update failed")
-
-            ret = git.cmd('checkout', 'origin/'+ rbranch)[0]
-            if ret != 0:
-                Exception("git checkout %s:%s failed" % (remote, rbranch))
-
-            if timestamp_suffix and len(rbranch) > 0:
-                self.logger.info(format_h1("Upload timestamp branch", tab=2))
-                ts = datetime.datetime.utcnow().strftime(timestamp_format)
-                rbranch = rbranch + '-' + ts
-
-            # If clean update is True, then remove all contents of the repo.
-            if clean_update is True:
-                ret = git.cmd('rm', '-r', '.')[0]
-                if ret != 0:
-                    Exception("git rm -r command failed")
-
-            # Copy the file list from patch_dir to tempdir
-            file_list = []
-            file_list += glob.glob(os.path.join(os.path.abspath(patch_dir), '*.patch'))
-            file_list += glob.glob(os.path.join(os.path.abspath(patch_dir), 'series'))
-
-            for item in file_list:
-                ret = self.sh.cmd('cp', '-f', item, os.path.join(os.path.abspath(temp_dir),
-                                                                os.path.basename(item)))[0]
-                if ret != 0:
-                    Exception("copying %s failed", (item))
-
-                ret = git.cmd('add', os.path.basename(item))
-                if ret != 0:
-                    Exception("git add %s failed", (os.path.basename(item)))
-
-            ret =  git.cmd('commit', '-s', '-m', commit_msg)[0]
-            if ret != 0:
-                Exception("git commit failed")
-
-            ret =  git.push('HEAD', remote, rbranch, force=force_update, use_refs=use_refs)[0]
-            if ret != 0:
-                Exception("git push to %s %s failed" % (remote, rbranch))
-
-            # Push the tags if required
-            if tag_name is not None:
-                if tag_msg is not None:
-                    ret = git.cmd('tag', tag_name, '-a', tag_msg)[0]
-                else:
-                    ret = git.cmd('tag', tag_name)[0]
-                if ret != 0:
-                    Exception("git tag %s failed" % (tag_name))
-
-                ret = git.cmd('push', 'origin', tag_name)[0]
-                if ret != 0:
-                    Exception("git push tag to %s failed" % (remote))
-
-        except Exception as e:
-            self.logger.error(e)
-            shutil.rmtree(temp_dir)
-            return False
-        else:
-            shutil.rmtree(temp_dir)
-            return True
 
 
     def generate_git_bundle(self, mode='branch', local_branch=None, head=None, base=None,
@@ -309,28 +366,6 @@ class KernelRelease(object):
 
         return outfile
 
-    def upload_branch(self, local_branch=None, remote=None, remote_branch=None,
-                      timestamp_suffix=False, timestamp_format="%m%d%Y%H%M%S",):
-        if not self.valid_git:
-            self.logger.error("Invalid git repo %s", self.src)
-            return None
-
-        self.logger.info(format_h1("Upload timestamp branch", tab=2))
-
-        ts = datetime.datetime.utcnow().strftime(timestamp_format)
-
-        if remote_branch is not None and len(remote_branch) > 0 and timestamp_suffix:
-            remote_branch = remote_branch + '-' + ts
-
-        try:
-            ret, out, err = self.git.push(local_branch, remote, remote_branch, force=True)
-            if ret != 0:
-                raise Exception("Git push to %s failed" % (remote))
-        except Exception as e:
-            self.logger.error(e)
-            return False
-        else:
-            return True
 
 def is_valid_dir(parser, arg):
     if not os.path.isdir(arg):

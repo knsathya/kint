@@ -29,7 +29,7 @@ class PyShell(object):
 
         #self.logger.info(args)
         #self.logger.info('wd=%s, out_log=%s, dry_run=%s, shell=%s' % (wd, out_log, dry_run, shell))
-        self.logger.debug("Executing " + ' '.join(list(args)))
+        self.logger.info("Executing " + ' '.join(list(args)))
 
         if len(args) < 0:
             return -1, '', 'Argument invalid error'
@@ -113,8 +113,19 @@ class PyShell(object):
                          shell=kwargs.get('shell', False))
 
 class GitShell(PyShell):
+    def __init__(self, wd=os.getcwd(), init=False, remote_list=[], fetch_all=False, stream_stdout=False, logger=None):
+        super(GitShell, self).__init__(wd=wd, stream_stdout=stream_stdout, logger = logger)
+        #self.logger.info('git init=%s, remote_list=%s, fetch_all=%s' % (init, remote_list, fetch_all))
+        self.init()
+        for remote in remote_list:
+            if len(remote) > 0:
+                self.add_remote(remote[0], remote[1], override=True)
+        if fetch_all:
+            self.cmd("remote update")
+
     def cmd(self, *args, **kwargs):
-        return super(GitShell, self).cmd(GIT_COMMAND_PATH, *args, **kwargs)
+        kwargs.pop('shell', None)
+        return super(GitShell, self).cmd(GIT_COMMAND_PATH + ' ' + ' '.join(list(args)), shell=True, **kwargs)
 
     def valid(self,  **kwargs):
         return True if os.path.exists(os.path.join(kwargs.get('wd', self.wd), '.git')) else False
@@ -141,24 +152,23 @@ class GitShell(PyShell):
             return self.cmd('push', remote, lbranch + ':' + rbranch, **kwargs)
 
     def current_branch(self, **kwargs):
-        cmd_str = GIT_COMMAND_PATH + " branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
-        return super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)[1].strip()
+        cmd_str = "branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
+        return self.cmd(cmd_str, shell=True, **kwargs)[1].strip()
+
+    def get_sha(self, commit='HEAD', shalen='12', index="head", **kwargs):
+        cmd_str = "log %s --oneline --abbrev=%d | %s -1 | cut -d' ' -f1" % (commit, shalen, index)
+
+        ret, out, err = self.cmd(cmd_str, shell=True, **kwargs)
+        if ret != 0:
+            return None
+
+        return out.strip()
 
     def base_sha(self, **kwargs):
-        cmd_str = GIT_COMMAND_PATH + " log --oneline | tail -1 | cut -d' ' -f1"
-        ret, out, err = super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)
-        if ret != 0:
-            return None
-
-        return out.strip()
+        return self.get_sha(index="tail", **kwargs)
 
     def head_sha(self, **kwargs):
-        cmd_str = GIT_COMMAND_PATH + " log --oneline | head -1 | cut -d' ' -f1"
-        ret, out, err = super(GitShell, self).cmd(cmd_str, shell=True, **kwargs)
-        if ret != 0:
-            return None
-
-        return out.strip()
+        return self.get_sha(**kwargs)
 
 if __name__ == '__main__':
 
