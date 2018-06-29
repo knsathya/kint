@@ -155,7 +155,7 @@ class GitShell(PyShell):
         cmd_str = "branch | awk -v FS=' ' '/\*/{print $NF}' | sed 's|[()]||g'"
         return self.cmd(cmd_str, shell=True, **kwargs)[1].strip()
 
-    def get_sha(self, commit='HEAD', shalen='12', index="head", **kwargs):
+    def get_sha(self, commit='HEAD', shalen=12, index="head", **kwargs):
         cmd_str = "log %s --oneline --abbrev=%d | %s -1 | cut -d' ' -f1" % (commit, shalen, index)
 
         ret, out, err = self.cmd(cmd_str, shell=True, **kwargs)

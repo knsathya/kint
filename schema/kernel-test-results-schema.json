@@ -1,0 +1,538 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "description": "Kernel test results schema",
+    "type": "object",
+    "$ref": "#/definitions/test-results",
+    "default": {
+    },
+    "definitions": {
+        "test-results": {
+            "type": "object",
+            "properties": {
+                "kernel-params": {
+                    "type": "object",
+                    "properties": {
+                        "head": {
+                            "description": "Head SHA ID of the branch",
+                            "type": "string",
+                            "default": ""
+                        },
+                        "base": {
+                            "description": "Base SHA ID of the branch",
+                            "type": "string",
+                            "default": ""
+                        },
+                        "branch": {
+                            "description": "Name of the kernel branch",
+                            "type": "string",
+                            "default": ""
+                        },
+                        "version": {
+                            "description": "Linux kernel version",
+                            "type": "string",
+                            "default": ""
+                        }
+                    }
+                },
+                "static-tests": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "arch_name"
+                        ],
+                        "properties": {
+                            "arch_name": {
+                                "description": "ARCH name used for compilation",
+                                "type": "string",
+                                "enum": [
+                                    "x86_64",
+                                    "i386",
+                                    "arm64"
+                                ]
+                            },
+                            "allyesconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "compile-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig compilation status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "sparse-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig sparse status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "smatch-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig smatch status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    }
+
+                                }
+                            },
+                            "allmodconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "compile-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig compilation status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "sparse-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig sparse status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "smatch-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig smatch status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    }
+
+                                }
+                            },
+                            "allnoconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "compile-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allnoconfig compilation status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "sparse-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allnoconfig sparse status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "smatch-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig smatch status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    }
+
+                                }
+                            },
+                            "defconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "compile-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel defconfig compilation status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "sparse-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel defconfig sparse status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "smatch-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig smatch status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    }
+
+                                }
+                            },
+                            "randconfig": {
+                                "type": "object",
+                                "properties": {
+                                    "compile-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel defconfig compilation status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "sparse-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel defconfig sparse status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    },
+                                    "smatch-test": {
+                                        "type": "object",
+                                        "properties": {
+                                            "status": {
+                                                "description": "Kernel allyesconfig smatch status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "N/A",
+                                                    "Passed",
+                                                    "Failed"
+                                                ],
+                                                "default": "N/A"
+                                            },
+                                            "warning_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            },
+                                            "error_count": {
+                                                "description": "Total number of warnings",
+                                                "type": "integer",
+                                                "default": 0
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                },
+                "checkpatch": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "description": "Kernel checkpatch analysis results",
+                            "type": "string",
+                            "enum": [
+                                "N/A",
+                                "Passed",
+                                "Failed"
+                            ],
+                            "default": "N/A"
+                        },
+                        "warning_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "error_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        }
+                    }
+                },
+                "bisect": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "description": "Kernel bisect check results",
+                            "type": "string",
+                            "enum": [
+                                "N/A",
+                                "Passed",
+                                "Failed"
+                            ],
+                            "default": "N/A"
+                        },
+                        "patch-list": {
+                            "description": "SHA ID of the failed patches",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "default": []
+                        }
+                    }
+                },
+                "aiaiai": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "description": "Kernel AiAiAi analysis results",
+                            "type": "string",
+                            "enum": [
+                                "N/A",
+                                "Passed",
+                                "Failed"
+                            ],
+                            "default": "N/A"
+                        },
+                        "warning_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        },
+                        "error_count": {
+                            "description": "Total number of warnings",
+                            "type": "integer",
+                            "default": 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

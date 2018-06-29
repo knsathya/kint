@@ -446,7 +446,7 @@ def add_cli_options(parser):
 
 if __name__ == "__main__":
     ret = True
-    logging.basicConfig(level=logging.ERROR, format='%(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     logger = logging.getLogger(__name__)
 

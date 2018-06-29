@@ -7,6 +7,7 @@ import logging
 import io
 import collections
 
+
 # Make it work for Python 2+3 and with Unicode
 try:
     to_unicode = unicode
@@ -260,6 +261,13 @@ class JSONParser(object):
 
         return str_
 
+    def dump_cfg(self, outfile):
+        with open(outfile, 'w+') as fobj:
+            json.dump(self.data, fobj, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+
+    def dump_schema(self, outfile):
+        with open(outfile, 'w+') as fobj:
+            json.dump(self.schema, fobj, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
 
 if __name__ == '__main__':
